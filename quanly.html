@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý danh sách quán</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap admin-wrap">
+    <header class="site-header">
+      <h1 style="font-size:2rem;">Quản lý danh sách</h1>
+      <p>Trang này chỉ dành cho bạn — đừng chia sẻ link này nếu không muốn người khác chỉnh sửa.</p>
+    </header>
+
+    <!-- QUÁN ĂN -->
+    <section class="admin-section">
+      <h2>🍚 Quán ăn</h2>
+      <div class="field">
+        <label>Tên quán</label>
+        <input type="text" id="quanAn_ten" placeholder="VD: Cơm tấm Bà Ba">
+      </div>
+      <div class="field">
+        <label>Loại món</label>
+        <select id="quanAn_loai">
+          <option value="kho">🍜 Khô (cơm, mì khô, bánh mì...)</option>
+          <option value="nuoc">🍲 Nước (bún, phở, hủ tiếu nước...)</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Giá từ (VNĐ)</label>
+          <input type="number" id="quanAn_giaTu" placeholder="35000" min="0">
+        </div>
+        <div class="field">
+          <label>Giá đến (VNĐ)</label>
+          <input type="number" id="quanAn_giaDen" placeholder="45000" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Ghi chú</label>
+        <textarea id="quanAn_ghiChu" placeholder="VD: Sườn nướng ngon, hơi đông giờ trưa"></textarea>
+      </div>
+      <div class="field">
+        <label>Ảnh — dán link hoặc chọn ảnh từ máy (jpg, png, gif, webp...)</label>
+        <input type="text" id="quanAn_anh" placeholder="https://...">
+        <input type="file" id="quanAn_file" accept="image/*" style="margin-top:6px;">
+        <div class="file-hint">Ảnh tải từ máy sẽ tự thu nhỏ để không làm nặng file dữ liệu.</div>
+        <img class="thumb-preview" id="quanAn_preview" onclick="openLightboxAdmin(this.src)">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="quanAn_submitBtn">Thêm quán</button>
+        <button class="btn btn-ghost" id="quanAn_cancelBtn" style="display:none;">Hủy sửa</button>
+      </div>
+
+      <div style="margin-top:20px;" id="quanAnList"></div>
+    </section>
+
+    <!-- QUÁN NƯỚC -->
+    <section class="admin-section">
+      <h2>🥤 Quán nước</h2>
+      <div class="field">
+        <label>Tên quán</label>
+        <input type="text" id="quanNuoc_ten" placeholder="VD: Trà sữa Ông Tây">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Giá từ (VNĐ)</label>
+          <input type="number" id="quanNuoc_giaTu" placeholder="25000" min="0">
+        </div>
+        <div class="field">
+          <label>Giá đến (VNĐ)</label>
+          <input type="number" id="quanNuoc_giaDen" placeholder="35000" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Ghi chú</label>
+        <textarea id="quanNuoc_ghiChu" placeholder="VD: Trân châu đường đen ngon"></textarea>
+      </div>
+      <div class="field">
+        <label>Ảnh — dán link hoặc chọn ảnh từ máy (jpg, png, gif, webp...)</label>
+        <input type="text" id="quanNuoc_anh" placeholder="https://...">
+        <input type="file" id="quanNuoc_file" accept="image/*" style="margin-top:6px;">
+        <div class="file-hint">Ảnh tải từ máy sẽ tự thu nhỏ để không làm nặng file dữ liệu.</div>
+        <img class="thumb-preview" id="quanNuoc_preview" onclick="openLightboxAdmin(this.src)">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="quanNuoc_submitBtn">Thêm quán</button>
+        <button class="btn btn-ghost" id="quanNuoc_cancelBtn" style="display:none;">Hủy sửa</button>
+      </div>
+
+      <div style="margin-top:20px;" id="quanNuocList"></div>
+    </section>
+
+    <!-- EXPORT -->
+    <section class="admin-section export-box">
+      <button class="btn btn-primary" id="exportBtn">⬇ Tải file dữ liệu (data.js)</button>
+      <p>Sau khi tải, thay file <strong>data.js</strong> trong repo GitHub của bạn rồi commit + push để cập nhật cho mọi người xem trang.</p>
+    </section>
+
+    <a class="admin-link" href="index.html">← Quay lại trang chính</a>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="lightbox-overlay" id="lightboxOverlay">
+    <img id="lightboxImg" src="" alt="Ảnh phóng to">
+  </div>
+
+  <script src="data.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

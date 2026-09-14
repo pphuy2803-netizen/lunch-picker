@@ -1,0 +1,592 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg: #24322B;
+  --bg-soft: #2A3A32;
+  --surface: #2F4038;
+  --surface-hover: #3A4F44;
+  --line: rgba(243,238,223,0.14);
+  --text: #F3EEDF;
+  --muted: #9FB0A0;
+  --accent: #E8B23E;
+  --accent-ink: #3A2A08;
+  --accent-2: #C6543A;
+  --radius: 14px;
+}
+
+*{ box-sizing: border-box; }
+
+html, body{
+  margin:0;
+  padding:0;
+  background:
+    radial-gradient(ellipse at 20% -10%, #2C3D34 0%, transparent 55%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding: 32px 20px 64px;
+}
+
+.wrap{
+  width:100%;
+  max-width: 720px;
+}
+
+/* ---------- Header ---------- */
+.site-header{
+  text-align:center;
+  margin-bottom: 28px;
+}
+
+.site-header h1{
+  font-family:'Be Vietnam Pro', sans-serif;
+  font-weight:800;
+  font-style:italic;
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.site-header p{
+  margin:0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+/* ---------- Tabs ---------- */
+.tabs{
+  display:flex;
+  justify-content:center;
+  gap: 6px;
+  margin-bottom: 28px;
+  background: var(--surface);
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  width: fit-content;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.tab-btn{
+  border:none;
+  background: transparent;
+  color: var(--muted);
+  font-family:'Inter', sans-serif;
+  font-weight:600;
+  font-size: 0.95rem;
+  padding: 10px 22px;
+  border-radius: 999px;
+  cursor:pointer;
+  transition: background .2s ease, color .2s ease;
+}
+
+.tab-btn.active{
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.tab-btn:not(.active):hover{
+  color: var(--text);
+}
+
+/* ---------- Spin hero ---------- */
+.spin-hero{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align:center;
+  margin-bottom: 36px;
+}
+
+.flip-card{
+  position:relative;
+  height: 220px;
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  border: 1px dashed var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  margin-bottom: 20px;
+}
+
+.flip-card .placeholder{
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.flip-card .result{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap: 6px;
+  padding: 16px;
+  animation: land .38s cubic-bezier(.2,1.4,.4,1);
+}
+
+.flip-card .result img{
+  width: 84px;
+  height: 84px;
+  object-fit:cover;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+
+.flip-card .result .name{
+  font-family:'Be Vietnam Pro', sans-serif;
+  font-weight:800;
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.flip-card .result .price{
+  color: var(--text);
+  font-weight:600;
+  font-size: 0.95rem;
+}
+
+.flip-card .result .note{
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.flip-card.spinning .result .name{
+  color: var(--text);
+}
+
+@keyframes land{
+  from{ transform: scale(.92); opacity: 0;}
+  to{ transform: scale(1); opacity:1;}
+}
+
+.spin-btn{
+  border:none;
+  background: var(--accent-2);
+  color: #FBEFEA;
+  font-family:'Inter', sans-serif;
+  font-weight:700;
+  font-size: 1.05rem;
+  padding: 14px 34px;
+  border-radius: 999px;
+  cursor:pointer;
+  transition: transform .12s ease, background .2s ease;
+}
+
+.spin-btn:hover{ background:#D9613F; }
+.spin-btn:active{ transform: scale(.97); }
+.spin-btn:disabled{ opacity: .6; cursor:not-allowed; }
+
+.spin-hero .empty-msg{
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ---------- List ---------- */
+.list-heading{
+  font-family:'Be Vietnam Pro', sans-serif;
+  font-weight:600;
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin: 0 0 14px 4px;
+}
+
+.list{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.card{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  display:flex;
+  gap: 12px;
+  align-items:flex-start;
+}
+
+.card .thumb{
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit:cover;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  flex-shrink:0;
+}
+
+.card .thumb.no-img{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: var(--muted);
+  font-size: 1.3rem;
+}
+
+.card .info .name{
+  font-weight:700;
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+
+.card .info .price{
+  color: var(--accent);
+  font-weight:600;
+  font-size: 0.88rem;
+  margin-bottom: 4px;
+}
+
+.card .info .note{
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height:1.4;
+}
+
+.empty-list{
+  color: var(--muted);
+  text-align:center;
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+/* ---------- Footer link to admin ---------- */
+.admin-link{
+  display:block;
+  text-align:center;
+  margin-top: 40px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration:none;
+}
+.admin-link:hover{ color: var(--text); }
+
+/* ================= Admin page ================= */
+.admin-wrap{ max-width: 640px; }
+
+.admin-section{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.admin-section h2{
+  font-family:'Be Vietnam Pro', sans-serif;
+  font-size: 1.2rem;
+  margin: 0 0 16px;
+}
+
+.field{
+  margin-bottom: 12px;
+}
+
+.field label{
+  display:block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.field input, .field textarea{
+  width:100%;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family:'Inter', sans-serif;
+  font-size: 0.92rem;
+}
+
+.field textarea{ resize: vertical; min-height: 50px; }
+
+.form-actions{
+  display:flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn{
+  border:none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight:600;
+  font-size: 0.9rem;
+  cursor:pointer;
+  font-family:'Inter', sans-serif;
+}
+
+.btn-primary{ background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover{ background:#F0BE5A; }
+
+.btn-ghost{ background: transparent; border: 1px solid var(--line); color: var(--text); }
+.btn-ghost:hover{ background: var(--surface-hover); }
+
+.btn-danger{ background: transparent; border: 1px solid var(--accent-2); color: var(--accent-2); }
+.btn-danger:hover{ background: rgba(198,84,58,.12); }
+
+.admin-item{
+  display:flex;
+  gap: 12px;
+  align-items:center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.admin-item:last-child{ border-bottom:none; }
+
+.admin-item .thumb{
+  width: 46px; height:46px; border-radius:8px; object-fit:cover;
+  background: var(--bg-soft); border:1px solid var(--line); flex-shrink:0;
+}
+
+.admin-item .meta{ flex:1; min-width:0; }
+.admin-item .meta .name{ font-weight:600; font-size: 0.92rem; }
+.admin-item .meta .sub{ color: var(--muted); font-size: 0.8rem; }
+
+.admin-item .actions{ display:flex; gap:6px; flex-shrink:0; }
+.icon-btn{
+  border:none; background:transparent; color: var(--muted);
+  cursor:pointer; font-size: 0.85rem; padding: 6px 8px; border-radius:6px;
+}
+.icon-btn:hover{ background: var(--surface-hover); color: var(--text); }
+
+.export-box{
+  text-align:center;
+  padding: 18px;
+}
+
+.export-box p{ color: var(--muted); font-size: 0.85rem; margin: 10px 0 0; }
+
+.toast{
+  position:fixed;
+  bottom: 24px;
+  left:50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-weight:600;
+  font-size: 0.88rem;
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .25s ease;
+}
+.toast.show{ opacity:1; }
+
+@media (prefers-reduced-motion: reduce){
+  .flip-card .result{ animation: none; }
+}
+
+/* ---------- Filter rows (phân khúc giá / ngôi sao hy vọng) ---------- */
+.filter-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap: 10px;
+  margin-bottom: 14px;
+  text-align:left;
+}
+
+.filter-label{
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight:600;
+  flex-shrink:0;
+}
+
+.filter-hint{
+  font-weight:400;
+  font-style: italic;
+  opacity: .8;
+}
+
+.chip-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 6px;
+}
+
+.tier-chip, .star-chip{
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-family:'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight:600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor:pointer;
+  transition: all .15s ease;
+}
+
+.tier-chip:hover, .star-chip:hover{ color: var(--text); }
+
+.tier-chip.active{
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.tier-chip.active::before{ content: "✓ "; }
+
+.star-chip.active{
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  color: #FBEFEA;
+}
+
+/* ---------- Spin actions ---------- */
+.spin-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap: 12px;
+}
+
+.confirm-btn{
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-family:'Inter', sans-serif;
+  font-weight:700;
+  font-size: 1.05rem;
+  padding: 14px 28px;
+  border-radius: 999px;
+  cursor:pointer;
+  transition: background .2s ease, color .2s ease;
+}
+
+.confirm-btn:hover:not(:disabled){ background: var(--accent); color: var(--accent-ink); }
+.confirm-btn:disabled{ opacity:.7; cursor:not-allowed; }
+
+/* ---------- Tag mini (loại khô/nước) ---------- */
+.tag-mini{
+  display:inline-block;
+  font-size: 0.7rem;
+  font-weight:600;
+  color: var(--muted);
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  padding: 1px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+/* ---------- History ---------- */
+.history-section{ margin-top: 40px; }
+
+.history-note{
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: -6px 0 14px 4px;
+}
+
+.history-item{
+  display:flex;
+  align-items:center;
+  gap: 14px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.history-item:last-child{ border-bottom:none; }
+
+.history-date{
+  font-family:'Be Vietnam Pro', sans-serif;
+  font-weight:700;
+  font-size: 0.95rem;
+  color: var(--accent);
+  width: 52px;
+  flex-shrink:0;
+  text-align:center;
+}
+.history-date span{
+  display:block;
+  font-family:'Inter', sans-serif;
+  font-weight:400;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.history-body{ flex:1; min-width:0; }
+.history-name{ font-weight:600; font-size:0.92rem; }
+.history-sub{ color: var(--muted); font-size:0.8rem; }
+
+/* ---------- Zoomable images / Lightbox ---------- */
+.zoomable{ cursor: zoom-in; }
+
+.lightbox-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(10,14,12,0.88);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 30px;
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .2s ease;
+  z-index: 100;
+}
+.lightbox-overlay.show{ opacity:1; pointer-events:auto; }
+
+.lightbox-overlay img{
+  max-width: min(90vw, 560px);
+  max-height: 85vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  cursor: zoom-out;
+}
+
+/* ---------- Admin: price range + loại select + image upload ---------- */
+.field-row{
+  display:flex;
+  gap: 10px;
+}
+.field-row .field{ flex:1; }
+
+.thumb-preview{
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit:cover;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  margin-top: 8px;
+  cursor: zoom-in;
+  display:none;
+}
+.thumb-preview.show{ display:block; }
+
+.file-hint{
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 4px;
+}
+
+select{
+  width:100%;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family:'Inter', sans-serif;
+  font-size: 0.92rem;
+}
