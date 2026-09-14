@@ -423,7 +423,7 @@ body{
   gap: 6px;
 }
 
-.tier-chip, .star-chip{
+.tier-chip, .star-chip, .mode-chip{
   border: 1px solid var(--line);
   background: var(--bg-soft);
   color: var(--muted);
@@ -436,14 +436,14 @@ body{
   transition: all .15s ease;
 }
 
-.tier-chip:hover, .star-chip:hover{ color: var(--text); }
+.tier-chip:hover, .star-chip:hover, .mode-chip:hover{ color: var(--text); }
 
-.tier-chip.active{
+.tier-chip.active, .mode-chip.active{
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
 }
-.tier-chip.active::before{ content: "✓ "; }
+.tier-chip.active::before, .mode-chip.active::before{ content: "✓ "; }
 
 .star-chip.active{
   background: var(--accent-2);

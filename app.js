@@ -15,7 +15,8 @@ const PRICE_TIERS = [
 // ---------- State ----------
 let currentTab = "quanAn";   // "quanAn" | "quanNuoc"
 let currentTiers = new Set();  // rỗng = không lọc, chọn nhiều phân khúc cùng lúc
-let currentStar = "none";    // "none" | "kho" | "nuoc" — chỉ áp dụng cho quán ăn
+let currentModes = new Set();   // rỗng = không lọc hình thức; "diAn" | "datApp"
+let currentStar = "none";    // "none" | "kho" | "nuoc" | "chacKho" | "chacNuoc" — chỉ áp dụng cho quán ăn
 let spinning = false;
 let currentResult = null;    // item đang hiển thị, chờ chốt
 
@@ -37,6 +38,10 @@ function formatPriceRange(item){
 
 function loaiLabel(loai){
   return loai === "kho" ? "🍜 Khô" : loai === "nuoc" ? "🍲 Nước" : "";
+}
+
+function hinhThucLabel(ht){
+  return ht === "diAn" ? "🍽️ Đi ăn" : ht === "datApp" ? "🛵 Đặt app" : "";
 }
 
 function getCurrentList(){
@@ -70,7 +75,8 @@ function addHistoryEntry(section, item){
     ten: item.ten,
     gia: formatPriceRange(item),
     anh: item.anh || "",
-    loai: item.loai || ""
+    loai: item.loai || "",
+    hinhThuc: item.hinhThuc || ""
   });
   saveHistory(history);
 }
@@ -100,7 +106,7 @@ function renderHistory(){
       <div class="history-item">
         <div class="history-date">${dateLabel}<span>${timeLabel}</span></div>
         <div class="history-body">
-          <div class="history-name">${icon} ${escapeHtml(h.ten)} ${h.loai ? `<span class="tag-mini">${loaiLabel(h.loai)}</span>` : ""}</div>
+          <div class="history-name">${icon} ${escapeHtml(h.ten)} ${h.loai ? `<span class="tag-mini">${loaiLabel(h.loai)}</span>` : ""} ${h.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(h.hinhThuc)}</span>` : ""}</div>
           <div class="history-sub">${escapeHtml(h.gia)}</div>
         </div>
         <button class="icon-btn" onclick="removeHistoryEntry(${idx})" title="Xóa khỏi lịch sử">✕</button>
@@ -113,7 +119,7 @@ function renderHistory(){
 function computeWeight(item, section, history){
   let w = 1;
 
-  if (section === "quanAn" && currentStar !== "none" && item.loai === currentStar) {
+  if (section === "quanAn" && (currentStar === "kho" || currentStar === "nuoc") && item.loai === currentStar) {
     w *= STAR_BOOST;
   }
 
@@ -128,13 +134,25 @@ function computeWeight(item, section, history){
 }
 
 function getFilteredPool(){
-  const list = getCurrentList();
-  if (currentTiers.size === 0) return list; // chưa tích phân khúc nào = không lọc
+  let list = getCurrentList();
 
-  const activeTiers = PRICE_TIERS.filter(t => currentTiers.has(t.id));
-  return list.filter(item =>
-    activeTiers.some(tier => item.giaTu <= tier.max && item.giaDen >= tier.min)
-  );
+  if (currentTiers.size > 0) {
+    const activeTiers = PRICE_TIERS.filter(t => currentTiers.has(t.id));
+    list = list.filter(item =>
+      activeTiers.some(tier => item.giaTu <= tier.max && item.giaDen >= tier.min)
+    );
+  }
+
+  if (currentModes.size > 0) {
+    list = list.filter(item => item.hinhThuc && currentModes.has(item.hinhThuc));
+  }
+
+  if (currentTab === "quanAn" && (currentStar === "chacKho" || currentStar === "chacNuoc")) {
+    const wantLoai = currentStar === "chacKho" ? "kho" : "nuoc";
+    list = list.filter(item => item.loai === wantLoai);
+  }
+
+  return list;
 }
 
 function pickWeighted(pool){
@@ -176,7 +194,7 @@ function renderList(){
     <div class="card">
       ${renderThumb(item, "thumb", true)}
       <div class="info">
-        <div class="name">${escapeHtml(item.ten)} ${item.loai ? `<span class="tag-mini">${loaiLabel(item.loai)}</span>` : ""}</div>
+        <div class="name">${escapeHtml(item.ten)} ${item.loai ? `<span class="tag-mini">${loaiLabel(item.loai)}</span>` : ""} ${item.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(item.hinhThuc)}</span>` : ""}</div>
         <div class="price">${formatPriceRange(item)}</div>
         ${item.ghiChu ? `<div class="note">${escapeHtml(item.ghiChu)}</div>` : ""}
       </div>
@@ -207,6 +225,18 @@ function toggleTier(tierId){
   }
   document.querySelectorAll(".tier-chip").forEach(c => {
     c.classList.toggle("active", currentTiers.has(c.dataset.tier));
+  });
+}
+
+function toggleMode(modeId){
+  if (spinning) return;
+  if (currentModes.has(modeId)) {
+    currentModes.delete(modeId);
+  } else {
+    currentModes.add(modeId);
+  }
+  document.querySelectorAll(".mode-chip").forEach(c => {
+    c.classList.toggle("active", currentModes.has(c.dataset.mode));
   });
 }
 
@@ -259,7 +289,7 @@ function spin(){
       card.innerHTML = `
         <div class="result">
           ${finalItem.anh ? `<img class="zoomable" onclick="openLightbox('${escapeHtml(finalItem.anh).replace(/'/g,"\\'")}')" src="${escapeHtml(finalItem.anh)}" alt="${escapeHtml(finalItem.ten)}" onerror="this.style.display='none'">` : ""}
-          <div class="name">${escapeHtml(finalItem.ten)} ${finalItem.loai ? `<span class="tag-mini">${loaiLabel(finalItem.loai)}</span>` : ""}</div>
+          <div class="name">${escapeHtml(finalItem.ten)} ${finalItem.loai ? `<span class="tag-mini">${loaiLabel(finalItem.loai)}</span>` : ""} ${finalItem.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(finalItem.hinhThuc)}</span>` : ""}</div>
           <div class="price">${formatPriceRange(finalItem)}</div>
           ${finalItem.ghiChu ? `<div class="note">${escapeHtml(finalItem.ghiChu)}</div>` : ""}
         </div>
@@ -303,6 +333,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelectorAll(".tier-chip").forEach(chip => {
     chip.addEventListener("click", () => toggleTier(chip.dataset.tier));
+  });
+  document.querySelectorAll(".mode-chip").forEach(chip => {
+    chip.addEventListener("click", () => toggleMode(chip.dataset.mode));
   });
   document.querySelectorAll(".star-chip").forEach(chip => {
     chip.addEventListener("click", () => setStar(chip.dataset.star));

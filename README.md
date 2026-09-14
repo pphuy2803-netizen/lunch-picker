@@ -62,9 +62,17 @@ Nếu muốn dùng ảnh tự chụp và lưu ngay trong repo:
   — có thể tích nhiều ô cùng lúc (ví dụ tích cả "Dưới 35k" và "35k–50k" để
   chừa dư chút ngân sách). Không tích ô nào = không lọc, quay trên toàn bộ
   danh sách. Muốn đổi mốc giá, sửa mảng `PRICE_TIERS` ở đầu file `app.js`.
-- **Ngôi sao hy vọng (chỉ áp dụng cho quán ăn)**: chọn "Khô" hoặc "Nước" để
-  tăng nhẹ tỉ lệ quay trúng loại đó (mặc định tăng 15%, không làm lệch tỉ lệ
-  quá nhiều). Muốn đổi mức tăng, sửa hằng số `STAR_BOOST` trong `app.js`.
+- **Hình thức**: mỗi quán chọn 1 trong 2 — "🍽️ Đi ăn" (ra quán ngồi) hoặc
+  "🛵 Đặt app" (giao hàng). Áp dụng cho cả quán ăn lẫn quán nước. Lúc quay có
+  thể tích chọn để chỉ quay trong đúng hình thức đang cần.
+- **Ngôi sao hy vọng (chỉ áp dụng cho quán ăn)**: 5 mức —
+  - *Không ưu tiên*: quay bình thường.
+  - *🍜 Khô* / *🍲 Nước*: tăng nhẹ tỉ lệ loại đó (15%), vẫn có thể ra loại kia.
+  - *✅ Chắc chắn Khô* / *✅ Chắc chắn Nước*: lọc cứng, chỉ quay trong đúng loại
+    đã chọn — dùng khi bạn đã quyết chắc ăn khô hay ăn nước rồi, chỉ cần quay
+    để chọn quán thôi.
+  Muốn đổi mức tăng của "Khô/Nước" (không phải "Chắc chắn"), sửa hằng số
+  `STAR_BOOST` trong `app.js`.
 - **Giảm tỉ lệ quán đã ăn gần đây**: mỗi lần một quán xuất hiện trong lịch sử
   14 ngày, tỉ lệ quay trúng lại sẽ giảm nhẹ (mặc định còn 85% mỗi lần, giảm
   dồn). Muốn đổi mức giảm, sửa hằng số `REPEAT_DECAY` trong `app.js`.
@@ -78,6 +86,13 @@ Nếu muốn dùng ảnh tự chụp và lưu ngay trong repo:
   sẽ to dần, nên nếu quán có sẵn ảnh trên mạng thì ưu tiên dùng link.
 - **Xem ảnh phóng to**: bấm vào bất kỳ ảnh nào (trong danh sách hoặc kết quả
   quay) để xem full-size, bấm ra ngoài để đóng lại.
+
+## Lưu ý khi mới thêm thuộc tính "Hình thức"
+
+Nếu bạn đã có sẵn danh sách quán từ trước (chưa có trường "Hình thức"), các
+quán đó sẽ hiện trống ở mục này. Vào `quanly.html`, bấm "Sửa" từng quán và
+chọn "Đi ăn" hoặc "Đặt app" cho đúng — quán chưa chọn sẽ không xuất hiện khi
+bạn có tích bộ lọc "Hình thức" lúc quay.
 
 ## Tùy biến thêm
 
