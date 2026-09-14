@@ -58,8 +58,9 @@ Nếu muốn dùng ảnh tự chụp và lưu ngay trong repo:
   này lưu bằng `localStorage`, tức là **lưu riêng trên từng trình duyệt/máy**,
   không dùng chung cho mọi người — mỗi người quay trên máy mình sẽ có lịch sử
   riêng của người đó.
-- **Phân khúc giá**: tích chọn "Dưới 35k / 35k–50k / Trên 50k" trước khi quay
-  — có thể tích nhiều ô cùng lúc (ví dụ tích cả "Dưới 35k" và "35k–50k" để
+- **Phân khúc giá**: tích chọn "Dưới 30k / 31k–40k / 41k–50k / 51k–59k / Từ
+  60k trở lên" trước khi quay — có thể tích nhiều ô cùng lúc (ví dụ tích cả
+  "Dưới 30k" và "31k–40k" để
   chừa dư chút ngân sách). Không tích ô nào = không lọc, quay trên toàn bộ
   danh sách. Muốn đổi mốc giá, sửa mảng `PRICE_TIERS` ở đầu file `app.js`.
 - **Hình thức**: mỗi quán chọn 1 trong 2 — "🍽️ Đi ăn" (ra quán ngồi) hoặc
@@ -93,6 +94,33 @@ Nếu bạn đã có sẵn danh sách quán từ trước (chưa có trường "
 quán đó sẽ hiện trống ở mục này. Vào `quanly.html`, bấm "Sửa" từng quán và
 chọn "Đi ăn" hoặc "Đặt app" cho đúng — quán chưa chọn sẽ không xuất hiện khi
 bạn có tích bộ lọc "Hình thức" lúc quay.
+
+## Lịch sử dùng chung cho mọi người (Firebase)
+
+Mặc định, lịch sử "chốt món" chỉ lưu riêng trên trình duyệt của từng người.
+Để **tất cả mọi người mở link đều thấy chung một lịch sử** (ai chốt món gì,
+người khác cũng thấy), bạn cần cấu hình Firebase Realtime Database (miễn phí)
+— làm theo hướng dẫn chi tiết ngay trong file `firebase-config.js`. Tóm tắt:
+
+1. Tạo project miễn phí tại https://console.firebase.google.com
+2. Bật Realtime Database, đặt rule cho phép đọc/ghi mục `history`.
+3. Lấy đoạn `firebaseConfig`, dán vào file `firebase-config.js`.
+4. Push lên GitHub như bình thường.
+
+Nếu chưa muốn làm bước này, cứ để nguyên `firebase-config.js` mặc định — web
+vẫn chạy bình thường, chỉ khác là lịch sử lưu riêng từng trình duyệt (không
+dùng chung).
+
+**Lưu ý bảo mật**: cách làm này để mục `history` trên Firebase ai có link đều
+đọc/ghi được (không cần đăng nhập) — phù hợp cho app nhỏ dùng trong nhóm bạn
+bè, đừng lưu thông tin nhạy cảm vào lịch sử.
+
+## Nhắc ăn chay theo âm lịch
+
+Mỗi khi mở trang, web tự tính ngày âm lịch hôm nay (dùng thuật toán thiên văn,
+không cần internet gọi API ngoài). Nếu hôm đó là mùng 1, 14 hoặc 15 âm lịch,
+một banner nhỏ sẽ hiện ở đầu trang nhắc "có thể cân nhắc ăn chay". Ngày
+thường thì không hiện gì cả.
 
 ## Tùy biến thêm
 

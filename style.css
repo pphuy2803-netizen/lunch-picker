@@ -590,3 +590,16 @@ select{
   font-family:'Inter', sans-serif;
   font-size: 0.92rem;
 }
+
+/* ---------- Banner nhắc ăn chay ---------- */
+.veg-banner{
+  background: linear-gradient(135deg, #3E5B45, #4E7355);
+  border: 1px solid rgba(232,178,62,0.35);
+  color: #F3EEDF;
+  font-weight:600;
+  font-size: 0.92rem;
+  text-align:center;
+  padding: 12px 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}

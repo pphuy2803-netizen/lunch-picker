@@ -13,6 +13,8 @@
       <p>Quay thử thoải mái, ưng rồi mới chốt.</p>
     </header>
 
+    <div class="veg-banner" id="vegBanner" style="display:none;"></div>
+
     <div class="tabs">
       <button class="tab-btn active" data-tab="quanAn">🍚 Quán ăn</button>
       <button class="tab-btn" data-tab="quanNuoc">🥤 Quán nước</button>
@@ -23,9 +25,11 @@
       <div class="filter-row">
         <span class="filter-label">Phân khúc giá <span class="filter-hint">(tích nhiều ô cũng được)</span>:</span>
         <div class="chip-group">
-          <button class="tier-chip" data-tier="duoi35">Dưới 35k</button>
-          <button class="tier-chip" data-tier="35-50">35k – 50k</button>
-          <button class="tier-chip" data-tier="tren50">Trên 50k</button>
+          <button class="tier-chip" data-tier="duoi30">Dưới 30k</button>
+          <button class="tier-chip" data-tier="31-40">31k – 40k</button>
+          <button class="tier-chip" data-tier="41-50">41k – 50k</button>
+          <button class="tier-chip" data-tier="51-59">51k – 59k</button>
+          <button class="tier-chip" data-tier="tu60">Từ 60k trở lên</button>
         </div>
       </div>
 
@@ -61,7 +65,7 @@
 
     <section class="history-section">
       <h2 class="list-heading">🗓️ Lịch sử 2 tuần qua</h2>
-      <p class="history-note">Lịch sử này chỉ lưu trên trình duyệt của bạn, không dùng chung với người khác.</p>
+      <p class="history-note" id="historyNote">Đang tải lịch sử...</p>
       <div id="historyList"></div>
     </section>
 
@@ -72,6 +76,10 @@
     <img id="lightboxImg" src="" alt="Ảnh phóng to">
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="lunar.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>

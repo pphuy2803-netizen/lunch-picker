@@ -7,9 +7,11 @@ const STAR_BOOST = 1.15;          // ngôi sao hy vọng tăng tỉ lệ thêm 1
 const HISTORY_STORAGE_KEY = "truaNayAnGi_history_v1";
 
 const PRICE_TIERS = [
-  { id: "duoi35", label: "Dưới 35k",   min: 0,     max: 34999 },
-  { id: "35-50",  label: "35k – 50k",  min: 35000, max: 50000 },
-  { id: "tren50", label: "Trên 50k",   min: 50001, max: Infinity },
+  { id: "duoi30", label: "Dưới 30k",   min: 0,     max: 30000 },
+  { id: "31-40",  label: "31k – 40k",  min: 31000, max: 40000 },
+  { id: "41-50",  label: "41k – 50k",  min: 41000, max: 50000 },
+  { id: "51-59",  label: "51k – 59k",  min: 51000, max: 59000 },
+  { id: "tu60",   label: "Từ 60k trở lên", min: 60000, max: Infinity },
 ];
 
 // ---------- State ----------
@@ -48,15 +50,24 @@ function getCurrentList(){
   return window.LUNCH_DATA[currentTab] || [];
 }
 
-// ---------- Lịch sử (localStorage) ----------
-function loadHistory(){
+// ---------- Lịch sử (dùng chung qua Firebase, hoặc lưu cục bộ nếu chưa cấu hình) ----------
+let useFirebase = false;
+let firebaseHistoryRef = null;
+let historyCache = []; // luôn là mảng {key, date, section, itemId, ten, gia, anh, loai, hinhThuc}
+
+function isFirebaseConfigured(){
+  const cfg = window.FIREBASE_CONFIG;
+  return !!(cfg && cfg.apiKey && !String(cfg.apiKey).startsWith("DIEN_"));
+}
+
+function loadLocalHistory(){
   try{
     const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch(e){ return []; }
 }
 
-function saveHistory(list){
+function saveLocalHistory(list){
   localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(list));
 }
 
@@ -66,9 +77,37 @@ function withinWindow(dateIso, days){
   return (now - then) <= days * 24 * 60 * 60 * 1000;
 }
 
+function initHistoryStore(){
+  if (isFirebaseConfigured() && window.firebase) {
+    try {
+      firebase.initializeApp(window.FIREBASE_CONFIG);
+      firebaseHistoryRef = firebase.database().ref("history");
+      useFirebase = true;
+      document.getElementById("historyNote").textContent =
+        "Lịch sử này dùng chung cho tất cả mọi người mở link — ai chốt món nào, mọi người đều thấy.";
+      firebaseHistoryRef.on("value", snapshot => {
+        const val = snapshot.val() || {};
+        historyCache = Object.keys(val).map(key => ({ key, ...val[key] }));
+        renderHistory();
+      }, err => {
+        console.error("Không kết nối được Firebase, chuyển sang lưu cục bộ:", err);
+        useFirebase = false;
+        historyCache = loadLocalHistory();
+        renderHistory();
+      });
+      return;
+    } catch(e){
+      console.error("Lỗi khởi tạo Firebase, chuyển sang lưu cục bộ:", e);
+    }
+  }
+  useFirebase = false;
+  historyCache = loadLocalHistory();
+  document.getElementById("historyNote").textContent =
+    "Lịch sử này đang lưu riêng trên trình duyệt của bạn (chưa cấu hình Firebase để dùng chung).";
+}
+
 function addHistoryEntry(section, item){
-  const history = loadHistory();
-  history.unshift({
+  const entry = {
     date: new Date().toISOString(),
     section,
     itemId: item.id,
@@ -77,27 +116,40 @@ function addHistoryEntry(section, item){
     anh: item.anh || "",
     loai: item.loai || "",
     hinhThuc: item.hinhThuc || ""
-  });
-  saveHistory(history);
+  };
+
+  if (useFirebase && firebaseHistoryRef) {
+    firebaseHistoryRef.push(entry); // listener .on("value") sẽ tự render lại
+  } else {
+    const key = "local_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    historyCache.unshift({ key, ...entry });
+    saveLocalHistory(historyCache);
+    renderHistory();
+  }
 }
 
-function removeHistoryEntry(index){
-  const history = loadHistory();
-  history.splice(index, 1);
-  saveHistory(history);
-  renderHistory();
+function removeHistoryEntry(key){
+  if (useFirebase && firebaseHistoryRef) {
+    firebaseHistoryRef.child(key).remove();
+  } else {
+    historyCache = historyCache.filter(h => h.key !== key);
+    saveLocalHistory(historyCache);
+    renderHistory();
+  }
 }
 
 function renderHistory(){
   const el = document.getElementById("historyList");
-  const all = loadHistory().filter(h => withinWindow(h.date, HISTORY_WINDOW_DAYS));
+  const all = historyCache
+    .filter(h => withinWindow(h.date, HISTORY_WINDOW_DAYS))
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   if (all.length === 0) {
     el.innerHTML = `<div class="empty-list">Chưa chốt món nào trong 2 tuần qua.</div>`;
     return;
   }
 
-  el.innerHTML = all.map((h, idx) => {
+  el.innerHTML = all.map(h => {
     const d = new Date(h.date);
     const dateLabel = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
     const timeLabel = d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
@@ -109,7 +161,7 @@ function renderHistory(){
           <div class="history-name">${icon} ${escapeHtml(h.ten)} ${h.loai ? `<span class="tag-mini">${loaiLabel(h.loai)}</span>` : ""} ${h.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(h.hinhThuc)}</span>` : ""}</div>
           <div class="history-sub">${escapeHtml(h.gia)}</div>
         </div>
-        <button class="icon-btn" onclick="removeHistoryEntry(${idx})" title="Xóa khỏi lịch sử">✕</button>
+        <button class="icon-btn" onclick="removeHistoryEntry('${h.key}')" title="Xóa khỏi lịch sử">✕</button>
       </div>
     `;
   }).join("");
@@ -156,8 +208,7 @@ function getFilteredPool(){
 }
 
 function pickWeighted(pool){
-  const history = loadHistory();
-  const weighted = pool.map(item => ({ item, weight: computeWeight(item, currentTab, history) }));
+  const weighted = pool.map(item => ({ item, weight: computeWeight(item, currentTab, historyCache) }));
   const total = weighted.reduce((s, x) => s + x.weight, 0);
   let r = Math.random() * total;
   for (const w of weighted) {
@@ -306,7 +357,6 @@ function spin(){
 function confirmChoice(){
   if (!currentResult) return;
   addHistoryEntry(currentTab, currentResult);
-  renderHistory();
   const confirmBtn = document.getElementById("confirmBtn");
   confirmBtn.textContent = "✓ Đã chốt!";
   confirmBtn.disabled = true;
@@ -346,5 +396,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resetFlipCard();
   renderList();
+  initHistoryStore();
   renderHistory();
+
+  const vegMsg = window.getVegetarianReminder ? window.getVegetarianReminder() : null;
+  if (vegMsg) {
+    const banner = document.getElementById("vegBanner");
+    banner.textContent = vegMsg;
+    banner.style.display = "block";
+  }
 });
