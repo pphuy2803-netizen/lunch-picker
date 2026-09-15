@@ -38,11 +38,12 @@
 // (giống bản trước) thay vì dùng chung cho mọi người.
 
 window.FIREBASE_CONFIG = {
-  apiKey: "DIEN_API_KEY_VAO_DAY",
-  authDomain: "DIEN_AUTH_DOMAIN_VAO_DAY",
-  databaseURL: "DIEN_DATABASE_URL_VAO_DAY",
-  projectId: "DIEN_PROJECT_ID_VAO_DAY",
-  storageBucket: "DIEN_STORAGE_BUCKET_VAO_DAY",
-  messagingSenderId: "DIEN_SENDER_ID_VAO_DAY",
-  appId: "DIEN_APP_ID_VAO_DAY"
+  apiKey: "AIzaSyB1OfDfBAzmyhZ1UVubPfXCaNmSwbVwsr4",
+  authDomain: "trua-nay-an-gi-a2bba.firebaseapp.com",
+  databaseURL: "https://trua-nay-an-gi-a2bba-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "trua-nay-an-gi-a2bba",
+  storageBucket: "trua-nay-an-gi-a2bba.firebasestorage.app",
+  messagingSenderId: "966561574598",
+  appId: "1:966561574598:web:a03782a25bca4c31e871c7",
+  measurementId: "G-64PVF7V3NG"
 };
