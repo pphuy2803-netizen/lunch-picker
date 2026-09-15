@@ -22,24 +22,9 @@
 
     <section class="spin-hero">
 
-      <div class="filter-row" id="foodPriceRow">
+      <div class="filter-row">
         <span class="filter-label">Phân khúc giá <span class="filter-hint">(tích nhiều ô cũng được)</span>:</span>
-        <div class="chip-group">
-          <button class="tier-chip" data-tier="duoi30">Dưới 30k</button>
-          <button class="tier-chip" data-tier="31-40">31k – 40k</button>
-          <button class="tier-chip" data-tier="41-50">41k – 50k</button>
-          <button class="tier-chip" data-tier="51-59">51k – 59k</button>
-          <button class="tier-chip" data-tier="tu60">Từ 60k trở lên</button>
-        </div>
-      </div>
-
-      <div class="filter-row" id="waterPriceRow" style="display:none;">
-        <span class="filter-label">Phân khúc giá <span class="filter-hint">(tích nhiều ô cũng được)</span>:</span>
-        <div class="chip-group">
-          <button class="water-tier-chip tier-chip" data-water-tier="duoi30">Dưới 30k</button>
-          <button class="water-tier-chip tier-chip" data-water-tier="31-50">31k – 50k</button>
-          <button class="water-tier-chip tier-chip" data-water-tier="tren50">Trên 50k</button>
-        </div>
+        <div class="chip-group" id="tierChips"></div>
       </div>
 
       <div class="filter-row" id="modeRow">
@@ -47,6 +32,16 @@
         <div class="chip-group">
           <button class="mode-chip" data-mode="diAn">🍽️ Đi ăn</button>
           <button class="mode-chip" data-mode="datApp">🛵 Đặt app</button>
+        </div>
+      </div>
+
+      <div class="filter-row" id="categoryRow" style="display:none;">
+        <span class="filter-label">Danh mục <span class="filter-hint">(tích nhiều ô cũng được)</span>:</span>
+        <div class="chip-group">
+          <button class="category-chip" data-cat="sinhTo">🥤 Sinh tố - Nước ép</button>
+          <button class="category-chip" data-cat="traSua">🧋 Trà sữa</button>
+          <button class="category-chip" data-cat="traTraiCay">🍹 Trà trái cây</button>
+          <button class="category-chip" data-cat="caPhe">☕ Cà phê</button>
         </div>
       </div>
 
@@ -61,19 +56,9 @@
         </div>
       </div>
 
-      <div class="filter-row" id="waterCategoryRow" style="display:none;">
-        <span class="filter-label">Loại nước <span class="filter-hint">(một quán có thể chọn nhiều mục)</span>:</span>
-        <div class="chip-group">
-          <button class="water-category-chip mode-chip" data-category="sinhToNuocEp">🥤 Sinh tố - Nước ép</button>
-          <button class="water-category-chip mode-chip" data-category="traSua">🧋 Trà sữa</button>
-          <button class="water-category-chip mode-chip" data-category="traTraiCay">🍓 Trà trái cây</button>
-          <button class="water-category-chip mode-chip" data-category="caPhe">☕ Cà phê</button>
-        </div>
-      </div>
-
-      <div class="filter-row" id="hopeRow" style="display:none;">
-        <span class="filter-label">💛 Nguyện vọng <span class="filter-hint">(chọn một hoặc nhiều quán, mỗi quán +15%)</span>:</span>
-        <div class="hope-box" id="hopeList"></div>
+      <div class="filter-row wishlist-row" id="wishlistRow" style="display:none;">
+        <button class="wishlist-toggle-btn" id="wishlistToggleBtn">🌟 Chọn quán nguyện vọng ▾</button>
+        <div class="wishlist-panel" id="wishlistPanel"></div>
       </div>
 
       <div class="flip-card" id="flipCard"></div>

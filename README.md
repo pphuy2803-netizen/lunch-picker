@@ -58,15 +58,19 @@ Nếu muốn dùng ảnh tự chụp và lưu ngay trong repo:
   này lưu bằng `localStorage`, tức là **lưu riêng trên từng trình duyệt/máy**,
   không dùng chung cho mọi người — mỗi người quay trên máy mình sẽ có lịch sử
   riêng của người đó.
-- **Phân khúc giá**: tích chọn "Dưới 30k / 31k–40k / 41k–50k / 51k–59k / Từ
-  60k trở lên" trước khi quay — có thể tích nhiều ô cùng lúc (ví dụ tích cả
-  "Dưới 30k" và "31k–40k" để
-  chừa dư chút ngân sách). Không tích ô nào = không lọc, quay trên toàn bộ
-  danh sách. Muốn đổi mốc giá, sửa mảng `PRICE_TIERS` ở đầu file `app.js`.
-- **Hình thức**: mỗi quán chọn 1 trong 2 — "🍽️ Đi ăn" (ra quán ngồi) hoặc
-  "🛵 Đặt app" (giao hàng). Áp dụng cho cả quán ăn lẫn quán nước. Lúc quay có
-  thể tích chọn để chỉ quay trong đúng hình thức đang cần.
-- **Ngôi sao hy vọng (chỉ áp dụng cho quán ăn)**: 5 mức —
+- **Phân khúc giá**: mỗi tab có mốc giá riêng —
+  - *Quán ăn*: Dưới 30k / 31k–40k / 41k–50k / 51k–59k / Từ 60k trở lên. Sửa ở
+    mảng `PRICE_TIERS_FOOD` trong `app.js`.
+  - *Quán nước*: Dưới 30k / 31k–50k / Trên 50k. Sửa ở mảng `PRICE_TIERS_DRINK`.
+  Có thể tích nhiều ô cùng lúc; không tích ô nào = không lọc giá.
+- **Hình thức (chỉ quán ăn)**: mỗi quán chọn 1 trong 2 — "🍽️ Đi ăn" (ra quán
+  ngồi) hoặc "🛵 Đặt app" (giao hàng). Lúc quay có thể tích chọn để chỉ quay
+  trong đúng hình thức đang cần. Quán nước không có mục này.
+- **Danh mục (chỉ quán nước)**: mỗi quán có thể thuộc nhiều danh mục cùng lúc
+  — 🥤 Sinh tố - Nước ép / 🧋 Trà sữa / 🍹 Trà trái cây / ☕ Cà phê. Lúc quay
+  tích chọn danh mục muốn lọc (tích nhiều cũng được), không tích gì = không lọc.
+  Đổi danh sách danh mục ở mảng `DRINK_CATEGORIES` trong `app.js`.
+- **Ngôi sao hy vọng (chỉ quán ăn)**: 5 mức —
   - *Không ưu tiên*: quay bình thường.
   - *🍜 Khô* / *🍲 Nước*: tăng nhẹ tỉ lệ loại đó (15%), vẫn có thể ra loại kia.
   - *✅ Chắc chắn Khô* / *✅ Chắc chắn Nước*: lọc cứng, chỉ quay trong đúng loại
@@ -74,6 +78,10 @@ Nếu muốn dùng ảnh tự chụp và lưu ngay trong repo:
     để chọn quán thôi.
   Muốn đổi mức tăng của "Khô/Nước" (không phải "Chắc chắn"), sửa hằng số
   `STAR_BOOST` trong `app.js`.
+- **Nguyện vọng (chỉ quán nước)**: bấm "🌟 Chọn quán nguyện vọng" để mở danh
+  sách, tích chọn 1 hoặc nhiều quán cụ thể bạn đang muốn — các quán được chọn
+  sẽ tăng tỉ lệ quay trúng thêm 15% (soft boost, không loại các quán khác).
+  Muốn đổi mức tăng, sửa hằng số `WISH_BOOST` trong `app.js`.
 - **Giảm tỉ lệ quán đã ăn gần đây**: mỗi lần một quán xuất hiện trong lịch sử
   14 ngày, tỉ lệ quay trúng lại sẽ giảm nhẹ (mặc định còn 85% mỗi lần, giảm
   dồn). Muốn đổi mức giảm, sửa hằng số `REPEAT_DECAY` trong `app.js`.
@@ -88,12 +96,12 @@ Nếu muốn dùng ảnh tự chụp và lưu ngay trong repo:
 - **Xem ảnh phóng to**: bấm vào bất kỳ ảnh nào (trong danh sách hoặc kết quả
   quay) để xem full-size, bấm ra ngoài để đóng lại.
 
-## Lưu ý khi mới thêm thuộc tính "Hình thức"
+## Lưu ý về dữ liệu quán nước hiện tại
 
-Nếu bạn đã có sẵn danh sách quán từ trước (chưa có trường "Hình thức"), các
-quán đó sẽ hiện trống ở mục này. Vào `quanly.html`, bấm "Sửa" từng quán và
-chọn "Đi ăn" hoặc "Đặt app" cho đúng — quán chưa chọn sẽ không xuất hiện khi
-bạn có tích bộ lọc "Hình thức" lúc quay.
+Các quán nước sẵn có đã được gán tạm "danh mục" dựa trên tên quán (ví dụ tên
+có chữ "Coffee" thì gán ☕ Cà phê). Đây chỉ là đoán hợp lý — bạn nên vào
+`quanly.html` kiểm tra và chỉnh lại cho đúng, nhất là các quán bán nhiều loại
+đồ uống khác nhau.
 
 ## Lịch sử dùng chung cho mọi người (Firebase)
 

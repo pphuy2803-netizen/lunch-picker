@@ -3,10 +3,12 @@
 // ---------- Cấu hình có thể chỉnh tay ----------
 const HISTORY_WINDOW_DAYS = 14;   // "đã ăn trong 2 tuần" tính giảm tỉ lệ
 const REPEAT_DECAY = 0.85;        // mỗi lần đã ăn gần đây, tỉ lệ quay ra lại còn 85%
-const STAR_BOOST = 1.15;          // ngôi sao hy vọng tăng tỉ lệ thêm 15%
+const STAR_BOOST = 1.15;          // ngôi sao hy vọng (quán ăn) tăng tỉ lệ thêm 15%
+const WISH_BOOST = 1.15;          // nguyện vọng (quán nước) tăng tỉ lệ thêm 15%
 const HISTORY_STORAGE_KEY = "truaNayAnGi_history_v1";
 
-const PRICE_TIERS = [
+// Phân khúc giá riêng cho quán ăn
+const PRICE_TIERS_FOOD = [
   { id: "duoi30", label: "Dưới 30k",   min: 0,     max: 30000 },
   { id: "31-40",  label: "31k – 40k",  min: 31000, max: 40000 },
   { id: "41-50",  label: "41k – 50k",  min: 41000, max: 50000 },
@@ -14,20 +16,33 @@ const PRICE_TIERS = [
   { id: "tu60",   label: "Từ 60k trở lên", min: 60000, max: Infinity },
 ];
 
-const WATER_PRICE_TIERS = [
-  { id: "duoi30", label: "Dưới 30k", min: 0, max: 30000 },
-  { id: "31-50", label: "31k – 50k", min: 31000, max: 50000 },
-  { id: "tren50", label: "Trên 50k", min: 50001, max: Infinity },
+// Phân khúc giá riêng cho quán nước
+const PRICE_TIERS_DRINK = [
+  { id: "duoi30", label: "Dưới 30k",  min: 0,     max: 30000 },
+  { id: "31-50",  label: "31k – 50k", min: 31000, max: 50000 },
+  { id: "tren50", label: "Trên 50k",  min: 50001, max: Infinity },
 ];
+
+// Danh mục đồ uống (mỗi quán có thể thuộc nhiều danh mục)
+const DRINK_CATEGORIES = [
+  { id: "sinhTo",     label: "🥤 Sinh tố - Nước ép" },
+  { id: "traSua",     label: "🧋 Trà sữa" },
+  { id: "traTraiCay", label: "🍹 Trà trái cây" },
+  { id: "caPhe",      label: "☕ Cà phê" },
+];
+
+function getPriceTiers(){
+  return currentTab === "quanAn" ? PRICE_TIERS_FOOD : PRICE_TIERS_DRINK;
+}
 
 // ---------- State ----------
 let currentTab = "quanAn";   // "quanAn" | "quanNuoc"
-let currentTiers = new Set();  // bộ lọc giá quán ăn
-let currentWaterTiers = new Set(); // bộ lọc giá quán nước
-let currentModes = new Set();   // rỗng = không lọc hình thức; "diAn" | "datApp"
-let currentWaterCategories = new Set();
-let currentWaterHopes = new Set();
-let currentStar = "none";    // "none" | "kho" | "nuoc" | "chacKho" | "chacNuoc" — chỉ áp dụng cho quán ăn
+// bộ lọc giá lưu riêng cho từng tab để không bị mất khi chuyển qua lại
+let tierSelections = { quanAn: new Set(), quanNuoc: new Set() };
+let currentModes = new Set();     // hình thức — chỉ áp dụng cho quán ăn
+let currentCategories = new Set(); // danh mục đồ uống — chỉ áp dụng cho quán nước
+let currentStar = "none";         // ngôi sao hy vọng — chỉ áp dụng cho quán ăn
+let currentWishlist = new Set();   // nguyện vọng (id quán) — chỉ áp dụng cho quán nước
 let spinning = false;
 let currentResult = null;    // item đang hiển thị, chờ chốt
 
@@ -53,6 +68,14 @@ function loaiLabel(loai){
 
 function hinhThucLabel(ht){
   return ht === "diAn" ? "🍽️ Đi ăn" : ht === "datApp" ? "🛵 Đặt app" : "";
+}
+
+function danhMucLabels(danhMuc){
+  if (!danhMuc || danhMuc.length === 0) return "";
+  return danhMuc.map(id => {
+    const cat = DRINK_CATEGORIES.find(c => c.id === id);
+    return cat ? `<span class="tag-mini">${cat.label}</span>` : "";
+  }).join(" ");
 }
 
 function getCurrentList(){
@@ -90,7 +113,7 @@ function initHistoryStore(){
   if (isFirebaseConfigured() && window.firebase) {
     try {
       firebase.initializeApp(window.FIREBASE_CONFIG);
-      firebaseHistoryRef = firebase.database().ref("history");
+      firebaseHistoryRef = firebase.database().ref(window.HISTORY_PATH || "history");
       useFirebase = true;
       document.getElementById("historyNote").textContent =
         "Lịch sử này dùng chung cho tất cả mọi người mở link — ai chốt món nào, mọi người đều thấy.";
@@ -184,8 +207,8 @@ function computeWeight(item, section, history){
     w *= STAR_BOOST;
   }
 
-  if (section === "quanNuoc" && currentWaterHopes.has(item.id)) {
-    w *= STAR_BOOST;
+  if (section === "quanNuoc" && currentWishlist.has(item.id)) {
+    w *= WISH_BOOST;
   }
 
   const recentCount = history.filter(h =>
@@ -200,37 +223,29 @@ function computeWeight(item, section, history){
 
 function getFilteredPool(){
   let list = getCurrentList();
+  const tiers = tierSelections[currentTab];
+
+  if (tiers.size > 0) {
+    const activeTiers = getPriceTiers().filter(t => tiers.has(t.id));
+    list = list.filter(item =>
+      activeTiers.some(tier => item.giaTu <= tier.max && item.giaDen >= tier.min)
+    );
+  }
 
   if (currentTab === "quanAn") {
-    if (currentTiers.size > 0) {
-      const activeTiers = PRICE_TIERS.filter(t => currentTiers.has(t.id));
-      list = list.filter(item =>
-        activeTiers.some(tier => item.giaTu <= tier.max && item.giaDen >= tier.min)
-      );
-    }
-
     if (currentModes.size > 0) {
       list = list.filter(item => item.hinhThuc && currentModes.has(item.hinhThuc));
     }
-  } else {
-    if (currentWaterTiers.size > 0) {
-      const activeTiers = WATER_PRICE_TIERS.filter(t => currentWaterTiers.has(t.id));
-      list = list.filter(item =>
-        activeTiers.some(tier => item.giaTu <= tier.max && item.giaDen >= tier.min)
-      );
-    }
-
-    if (currentWaterCategories.size > 0) {
-      list = list.filter(item => {
-        const categories = Array.isArray(item.danhMuc) ? item.danhMuc : [];
-        return categories.some(cat => currentWaterCategories.has(cat));
-      });
+    if (currentStar === "chacKho" || currentStar === "chacNuoc") {
+      const wantLoai = currentStar === "chacKho" ? "kho" : "nuoc";
+      list = list.filter(item => item.loai === wantLoai);
     }
   }
 
-  if (currentTab === "quanAn" && (currentStar === "chacKho" || currentStar === "chacNuoc")) {
-    const wantLoai = currentStar === "chacKho" ? "kho" : "nuoc";
-    list = list.filter(item => item.loai === wantLoai);
+  if (currentTab === "quanNuoc" && currentCategories.size > 0) {
+    list = list.filter(item =>
+      Array.isArray(item.danhMuc) && item.danhMuc.some(dm => currentCategories.has(dm))
+    );
   }
 
   return list;
@@ -274,7 +289,7 @@ function renderList(){
     <div class="card">
       ${renderThumb(item, "thumb", true)}
       <div class="info">
-        <div class="name">${escapeHtml(item.ten)} ${item.loai ? `<span class="tag-mini">${loaiLabel(item.loai)}</span>` : ""} ${item.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(item.hinhThuc)}</span>` : ""}</div>
+        <div class="name">${escapeHtml(item.ten)} ${item.loai ? `<span class="tag-mini">${loaiLabel(item.loai)}</span>` : ""} ${item.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(item.hinhThuc)}</span>` : ""} ${danhMucLabels(item.danhMuc)}</div>
         <div class="price">${formatPriceRange(item)}</div>
         ${item.ghiChu ? `<div class="note">${escapeHtml(item.ghiChu)}</div>` : ""}
       </div>
@@ -282,41 +297,46 @@ function renderList(){
   `).join("");
 }
 
-// ---------- Điều khiển bộ lọc quán nước ----------
-function renderHopeList(){
-  const el = document.getElementById("hopeList");
-  if (!el) return;
-  const shops = getCurrentList();
-  if (shops.length === 0) {
-    el.innerHTML = `<div class="hope-empty">Chưa có quán nước để chọn.</div>`;
+// ---------- Render các bộ lọc phụ thuộc tab ----------
+function renderPriceChips(){
+  const container = document.getElementById("tierChips");
+  const tiers = getPriceTiers();
+  const selected = tierSelections[currentTab];
+  container.innerHTML = tiers.map(t => `
+    <button class="tier-chip${selected.has(t.id) ? " active" : ""}" data-tier="${t.id}">${escapeHtml(t.label)}</button>
+  `).join("");
+  container.querySelectorAll(".tier-chip").forEach(chip => {
+    chip.addEventListener("click", () => toggleTier(chip.dataset.tier));
+  });
+}
+
+function renderWishlistPanel(){
+  const panel = document.getElementById("wishlistPanel");
+  const list = window.LUNCH_DATA.quanNuoc || [];
+  if (list.length === 0) {
+    panel.innerHTML = `<div class="empty-list">Chưa có quán nước nào.</div>`;
     return;
   }
-  el.innerHTML = shops.map(item => `
-    <label class="hope-option">
-      <input type="checkbox" value="${escapeHtml(item.id)}" ${currentWaterHopes.has(item.id) ? "checked" : ""}>
+  panel.innerHTML = list.map(item => `
+    <label class="wish-item">
+      <input type="checkbox" data-wish="${item.id}" ${currentWishlist.has(item.id) ? "checked" : ""}>
       <span>${escapeHtml(item.ten)}</span>
     </label>
   `).join("");
-  el.querySelectorAll('input[type="checkbox"]').forEach(input => {
-    input.addEventListener("change", () => {
-      if (input.checked) currentWaterHopes.add(input.value);
-      else currentWaterHopes.delete(input.value);
+  panel.querySelectorAll("input[data-wish]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) currentWishlist.add(cb.dataset.wish);
+      else currentWishlist.delete(cb.dataset.wish);
+      updateWishlistSummary();
     });
   });
 }
 
-function toggleWaterTier(tierId){
-  if (spinning) return;
-  if (currentWaterTiers.has(tierId)) currentWaterTiers.delete(tierId);
-  else currentWaterTiers.add(tierId);
-  document.querySelectorAll(".water-tier-chip").forEach(c => c.classList.toggle("active", currentWaterTiers.has(c.dataset.waterTier)));
-}
-
-function toggleWaterCategory(category){
-  if (spinning) return;
-  if (currentWaterCategories.has(category)) currentWaterCategories.delete(category);
-  else currentWaterCategories.add(category);
-  document.querySelectorAll(".water-category-chip").forEach(c => c.classList.toggle("active", currentWaterCategories.has(c.dataset.category)));
+function updateWishlistSummary(){
+  const btn = document.getElementById("wishlistToggleBtn");
+  btn.textContent = currentWishlist.size > 0
+    ? `🌟 Nguyện vọng (${currentWishlist.size} quán) ▾`
+    : `🌟 Chọn quán nguyện vọng ▾`;
 }
 
 // ---------- Điều khiển tab / bộ lọc ----------
@@ -326,44 +346,44 @@ function switchTab(tab){
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
   });
-  document.getElementById("foodPriceRow").style.display = tab === "quanAn" ? "flex" : "none";
-  document.getElementById("waterPriceRow").style.display = tab === "quanNuoc" ? "flex" : "none";
-  document.getElementById("modeRow").style.display = tab === "quanAn" ? "flex" : "none";
+
   document.getElementById("starRow").style.display = tab === "quanAn" ? "flex" : "none";
-  document.getElementById("waterCategoryRow").style.display = tab === "quanNuoc" ? "flex" : "none";
-  document.getElementById("hopeRow").style.display = tab === "quanNuoc" ? "flex" : "none";
+  document.getElementById("modeRow").style.display = tab === "quanAn" ? "flex" : "none";
+  document.getElementById("categoryRow").style.display = tab === "quanNuoc" ? "flex" : "none";
+  document.getElementById("wishlistRow").style.display = tab === "quanNuoc" ? "block" : "none";
+
   currentStar = "none";
   document.querySelectorAll(".star-chip").forEach(c => c.classList.toggle("active", c.dataset.star === "none"));
-  currentModes.clear();
-  document.querySelectorAll(".mode-chip").forEach(c => {
-    if (!c.classList.contains("water-category-chip")) c.classList.remove("active");
-  });
-  renderHopeList();
+
+  renderPriceChips();
+  renderWishlistPanel();
   resetFlipCard();
   renderList();
 }
 
 function toggleTier(tierId){
   if (spinning) return;
-  if (currentTiers.has(tierId)) {
-    currentTiers.delete(tierId);
-  } else {
-    currentTiers.add(tierId);
-  }
-  document.querySelectorAll(".tier-chip").forEach(c => {
-    c.classList.toggle("active", currentTiers.has(c.dataset.tier));
-  });
+  const selected = tierSelections[currentTab];
+  if (selected.has(tierId)) selected.delete(tierId);
+  else selected.add(tierId);
+  renderPriceChips();
 }
 
 function toggleMode(modeId){
   if (spinning) return;
-  if (currentModes.has(modeId)) {
-    currentModes.delete(modeId);
-  } else {
-    currentModes.add(modeId);
-  }
+  if (currentModes.has(modeId)) currentModes.delete(modeId);
+  else currentModes.add(modeId);
   document.querySelectorAll(".mode-chip").forEach(c => {
     c.classList.toggle("active", currentModes.has(c.dataset.mode));
+  });
+}
+
+function toggleCategory(catId){
+  if (spinning) return;
+  if (currentCategories.has(catId)) currentCategories.delete(catId);
+  else currentCategories.add(catId);
+  document.querySelectorAll(".category-chip").forEach(c => {
+    c.classList.toggle("active", currentCategories.has(c.dataset.cat));
   });
 }
 
@@ -371,6 +391,11 @@ function setStar(star){
   if (spinning) return;
   currentStar = star;
   document.querySelectorAll(".star-chip").forEach(c => c.classList.toggle("active", c.dataset.star === star));
+}
+
+function toggleWishlistPanel(){
+  const panel = document.getElementById("wishlistPanel");
+  panel.classList.toggle("show");
 }
 
 // ---------- Quay & chốt ----------
@@ -389,7 +414,7 @@ function spin(){
   const confirmBtn = document.getElementById("confirmBtn");
 
   if (pool.length === 0) {
-    card.innerHTML = `<div class="placeholder">Không có quán nào khớp phân khúc giá này.</div>`;
+    card.innerHTML = `<div class="placeholder">Không có quán nào khớp bộ lọc đang chọn.</div>`;
     confirmBtn.style.display = "none";
     currentResult = null;
     return;
@@ -416,7 +441,7 @@ function spin(){
       card.innerHTML = `
         <div class="result">
           ${finalItem.anh ? `<img class="zoomable" onclick="openLightbox('${escapeHtml(finalItem.anh).replace(/'/g,"\\'")}')" src="${escapeHtml(finalItem.anh)}" alt="${escapeHtml(finalItem.ten)}" onerror="this.style.display='none'">` : ""}
-          <div class="name">${escapeHtml(finalItem.ten)} ${finalItem.loai ? `<span class="tag-mini">${loaiLabel(finalItem.loai)}</span>` : ""} ${finalItem.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(finalItem.hinhThuc)}</span>` : ""}</div>
+          <div class="name">${escapeHtml(finalItem.ten)} ${finalItem.loai ? `<span class="tag-mini">${loaiLabel(finalItem.loai)}</span>` : ""} ${finalItem.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(finalItem.hinhThuc)}</span>` : ""} ${danhMucLabels(finalItem.danhMuc)}</div>
           <div class="price">${formatPriceRange(finalItem)}</div>
           ${finalItem.ghiChu ? `<div class="note">${escapeHtml(finalItem.ghiChu)}</div>` : ""}
         </div>
@@ -457,29 +482,24 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
-  document.querySelectorAll(".tier-chip").forEach(chip => {
-    if (chip.classList.contains("water-tier-chip")) {
-      chip.addEventListener("click", () => toggleWaterTier(chip.dataset.waterTier));
-    } else {
-      chip.addEventListener("click", () => toggleTier(chip.dataset.tier));
-    }
-  });
-  document.querySelectorAll(".mode-chip:not(.water-category-chip)").forEach(chip => {
+  document.querySelectorAll(".mode-chip").forEach(chip => {
     chip.addEventListener("click", () => toggleMode(chip.dataset.mode));
+  });
+  document.querySelectorAll(".category-chip").forEach(chip => {
+    chip.addEventListener("click", () => toggleCategory(chip.dataset.cat));
   });
   document.querySelectorAll(".star-chip").forEach(chip => {
     chip.addEventListener("click", () => setStar(chip.dataset.star));
   });
-  document.querySelectorAll(".water-category-chip").forEach(chip => {
-    chip.addEventListener("click", () => toggleWaterCategory(chip.dataset.category));
-  });
   document.getElementById("spinBtn").addEventListener("click", spin);
   document.getElementById("confirmBtn").addEventListener("click", confirmChoice);
   document.getElementById("lightboxOverlay").addEventListener("click", closeLightbox);
+  document.getElementById("wishlistToggleBtn").addEventListener("click", toggleWishlistPanel);
 
+  renderPriceChips();
+  updateWishlistSummary();
   resetFlipCard();
   renderList();
-  renderHopeList();
   initHistoryStore();
   renderHistory();
 
