@@ -72,12 +72,13 @@
         <input type="text" id="quanNuoc_ten" placeholder="VD: Trà sữa Ông Tây">
       </div>
       <div class="field">
-        <label>Hình thức</label>
-        <select id="quanNuoc_hinhThuc">
-          <option value="">-- Chưa chọn --</option>
-          <option value="diAn">🍽️ Đi ăn (ra quán ngồi)</option>
-          <option value="datApp">🛵 Đặt app (giao hàng)</option>
-        </select>
+        <label>Danh mục nước <span class="filter-hint">(có thể chọn nhiều)</span></label>
+        <div class="admin-check-group" id="quanNuoc_danhMuc">
+          <label><input type="checkbox" value="sinhToNuocEp"> 🥤 Sinh tố - Nước ép</label>
+          <label><input type="checkbox" value="traSua"> 🧋 Trà sữa</label>
+          <label><input type="checkbox" value="traTraiCay"> 🍓 Trà trái cây</label>
+          <label><input type="checkbox" value="caPhe"> ☕ Cà phê</label>
+        </div>
       </div>
       <div class="field-row">
         <div class="field">

@@ -36,6 +36,24 @@ function hinhThucLabel(ht){
   return ht === "diAn" ? "🍽️ Đi ăn" : ht === "datApp" ? "🛵 Đặt app" : "";
 }
 
+function danhMucLabel(key){
+  return {
+    sinhToNuocEp: "🥤 Sinh tố - Nước ép",
+    traSua: "🧋 Trà sữa",
+    traTraiCay: "🍓 Trà trái cây",
+    caPhe: "☕ Cà phê"
+  }[key] || key;
+}
+
+function getWaterCategories(){
+  return Array.from(document.querySelectorAll('#quanNuoc_danhMuc input[type="checkbox"]:checked')).map(x => x.value);
+}
+
+function setWaterCategories(categories){
+  const selected = new Set(Array.isArray(categories) ? categories : []);
+  document.querySelectorAll('#quanNuoc_danhMuc input[type="checkbox"]').forEach(x => x.checked = selected.has(x.value));
+}
+
 function showToast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -128,7 +146,7 @@ function renderSection(section){
         ? `<img class="thumb" style="cursor:zoom-in" onclick="openLightboxAdmin('${escapeHtml(item.anh).replace(/'/g,"\\'")}')" src="${escapeHtml(item.anh)}" onerror="this.style.display='none'">`
         : `<div class="thumb" style="display:flex;align-items:center;justify-content:center;">🍜</div>`}
       <div class="meta">
-        <div class="name">${escapeHtml(item.ten)} ${item.loai ? `<span class="tag-mini">${loaiLabel(item.loai)}</span>` : ""} ${item.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(item.hinhThuc)}</span>` : ""}</div>
+        <div class="name">${escapeHtml(item.ten)} ${item.loai ? `<span class="tag-mini">${loaiLabel(item.loai)}</span>` : ""} ${item.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(item.hinhThuc)}</span>` : ""} ${(item.danhMuc || []).map(d => `<span class="tag-mini">${danhMucLabel(d)}</span>`).join(" ")}</div>
         <div class="sub">${formatPriceRange(item)}</div>
       </div>
       <div class="actions">
@@ -152,7 +170,8 @@ function resetForm(section){
   document.getElementById(section + "_anh").value = "";
   document.getElementById(section + "_file").value = "";
   if (section === "quanAn") document.getElementById("quanAn_loai").value = "kho";
-  document.getElementById(section + "_hinhThuc").value = "";
+  if (document.getElementById(section + "_hinhThuc")) document.getElementById(section + "_hinhThuc").value = "";
+  if (section === "quanNuoc") setWaterCategories([]);
   updatePreview(section, "");
   document.getElementById(section + "_submitBtn").textContent = "Thêm quán";
   document.getElementById(section + "_cancelBtn").style.display = "none";
@@ -169,7 +188,8 @@ function startEdit(section, id){
   document.getElementById(section + "_ghiChu").value = item.ghiChu || "";
   document.getElementById(section + "_anh").value = item.anh || "";
   if (section === "quanAn") document.getElementById("quanAn_loai").value = item.loai || "kho";
-  document.getElementById(section + "_hinhThuc").value = item.hinhThuc || "";
+  if (document.getElementById(section + "_hinhThuc")) document.getElementById(section + "_hinhThuc").value = item.hinhThuc || "";
+  if (section === "quanNuoc") setWaterCategories(item.danhMuc || []);
   updatePreview(section, item.anh || "");
   document.getElementById(section + "_submitBtn").textContent = "Lưu thay đổi";
   document.getElementById(section + "_cancelBtn").style.display = "inline-block";
@@ -212,17 +232,21 @@ function submitForm(section){
   }
 
   const loai = section === "quanAn" ? document.getElementById("quanAn_loai").value : undefined;
-  const hinhThuc = document.getElementById(section + "_hinhThuc").value;
+  const hinhThucEl = document.getElementById(section + "_hinhThuc");
+  const hinhThuc = hinhThucEl ? hinhThucEl.value : "";
+  const danhMuc = section === "quanNuoc" ? getWaterCategories() : undefined;
 
   if (editingSection === section && editingId) {
     const item = workingData[section].find(x => x.id === editingId);
     item.ten = ten; item.giaTu = giaTu; item.giaDen = giaDen;
     item.ghiChu = ghiChu; item.anh = anh; item.hinhThuc = hinhThuc;
     if (loai !== undefined) item.loai = loai;
+    if (danhMuc !== undefined) item.danhMuc = danhMuc;
     showToast("Đã lưu thay đổi.");
   } else {
     const newItem = { id: genId(section === "quanAn" ? "qa" : "qn"), ten, giaTu, giaDen, ghiChu, anh, hinhThuc };
     if (loai !== undefined) newItem.loai = loai;
+    if (danhMuc !== undefined) newItem.danhMuc = danhMuc;
     workingData[section].push(newItem);
     showToast("Đã thêm quán mới.");
   }

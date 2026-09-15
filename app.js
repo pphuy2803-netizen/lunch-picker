@@ -14,10 +14,19 @@ const PRICE_TIERS = [
   { id: "tu60",   label: "Từ 60k trở lên", min: 60000, max: Infinity },
 ];
 
+const WATER_PRICE_TIERS = [
+  { id: "duoi30", label: "Dưới 30k", min: 0, max: 30000 },
+  { id: "31-50", label: "31k – 50k", min: 31000, max: 50000 },
+  { id: "tren50", label: "Trên 50k", min: 50001, max: Infinity },
+];
+
 // ---------- State ----------
 let currentTab = "quanAn";   // "quanAn" | "quanNuoc"
-let currentTiers = new Set();  // rỗng = không lọc, chọn nhiều phân khúc cùng lúc
+let currentTiers = new Set();  // bộ lọc giá quán ăn
+let currentWaterTiers = new Set(); // bộ lọc giá quán nước
 let currentModes = new Set();   // rỗng = không lọc hình thức; "diAn" | "datApp"
+let currentWaterCategories = new Set();
+let currentWaterHopes = new Set();
 let currentStar = "none";    // "none" | "kho" | "nuoc" | "chacKho" | "chacNuoc" — chỉ áp dụng cho quán ăn
 let spinning = false;
 let currentResult = null;    // item đang hiển thị, chờ chốt
@@ -175,6 +184,10 @@ function computeWeight(item, section, history){
     w *= STAR_BOOST;
   }
 
+  if (section === "quanNuoc" && currentWaterHopes.has(item.id)) {
+    w *= STAR_BOOST;
+  }
+
   const recentCount = history.filter(h =>
     h.section === section &&
     h.itemId === item.id &&
@@ -188,15 +201,31 @@ function computeWeight(item, section, history){
 function getFilteredPool(){
   let list = getCurrentList();
 
-  if (currentTiers.size > 0) {
-    const activeTiers = PRICE_TIERS.filter(t => currentTiers.has(t.id));
-    list = list.filter(item =>
-      activeTiers.some(tier => item.giaTu <= tier.max && item.giaDen >= tier.min)
-    );
-  }
+  if (currentTab === "quanAn") {
+    if (currentTiers.size > 0) {
+      const activeTiers = PRICE_TIERS.filter(t => currentTiers.has(t.id));
+      list = list.filter(item =>
+        activeTiers.some(tier => item.giaTu <= tier.max && item.giaDen >= tier.min)
+      );
+    }
 
-  if (currentModes.size > 0) {
-    list = list.filter(item => item.hinhThuc && currentModes.has(item.hinhThuc));
+    if (currentModes.size > 0) {
+      list = list.filter(item => item.hinhThuc && currentModes.has(item.hinhThuc));
+    }
+  } else {
+    if (currentWaterTiers.size > 0) {
+      const activeTiers = WATER_PRICE_TIERS.filter(t => currentWaterTiers.has(t.id));
+      list = list.filter(item =>
+        activeTiers.some(tier => item.giaTu <= tier.max && item.giaDen >= tier.min)
+      );
+    }
+
+    if (currentWaterCategories.size > 0) {
+      list = list.filter(item => {
+        const categories = Array.isArray(item.danhMuc) ? item.danhMuc : [];
+        return categories.some(cat => currentWaterCategories.has(cat));
+      });
+    }
   }
 
   if (currentTab === "quanAn" && (currentStar === "chacKho" || currentStar === "chacNuoc")) {
@@ -253,6 +282,43 @@ function renderList(){
   `).join("");
 }
 
+// ---------- Điều khiển bộ lọc quán nước ----------
+function renderHopeList(){
+  const el = document.getElementById("hopeList");
+  if (!el) return;
+  const shops = getCurrentList();
+  if (shops.length === 0) {
+    el.innerHTML = `<div class="hope-empty">Chưa có quán nước để chọn.</div>`;
+    return;
+  }
+  el.innerHTML = shops.map(item => `
+    <label class="hope-option">
+      <input type="checkbox" value="${escapeHtml(item.id)}" ${currentWaterHopes.has(item.id) ? "checked" : ""}>
+      <span>${escapeHtml(item.ten)}</span>
+    </label>
+  `).join("");
+  el.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    input.addEventListener("change", () => {
+      if (input.checked) currentWaterHopes.add(input.value);
+      else currentWaterHopes.delete(input.value);
+    });
+  });
+}
+
+function toggleWaterTier(tierId){
+  if (spinning) return;
+  if (currentWaterTiers.has(tierId)) currentWaterTiers.delete(tierId);
+  else currentWaterTiers.add(tierId);
+  document.querySelectorAll(".water-tier-chip").forEach(c => c.classList.toggle("active", currentWaterTiers.has(c.dataset.waterTier)));
+}
+
+function toggleWaterCategory(category){
+  if (spinning) return;
+  if (currentWaterCategories.has(category)) currentWaterCategories.delete(category);
+  else currentWaterCategories.add(category);
+  document.querySelectorAll(".water-category-chip").forEach(c => c.classList.toggle("active", currentWaterCategories.has(c.dataset.category)));
+}
+
 // ---------- Điều khiển tab / bộ lọc ----------
 function switchTab(tab){
   if (spinning) return;
@@ -260,9 +326,19 @@ function switchTab(tab){
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
   });
+  document.getElementById("foodPriceRow").style.display = tab === "quanAn" ? "flex" : "none";
+  document.getElementById("waterPriceRow").style.display = tab === "quanNuoc" ? "flex" : "none";
+  document.getElementById("modeRow").style.display = tab === "quanAn" ? "flex" : "none";
   document.getElementById("starRow").style.display = tab === "quanAn" ? "flex" : "none";
+  document.getElementById("waterCategoryRow").style.display = tab === "quanNuoc" ? "flex" : "none";
+  document.getElementById("hopeRow").style.display = tab === "quanNuoc" ? "flex" : "none";
   currentStar = "none";
   document.querySelectorAll(".star-chip").forEach(c => c.classList.toggle("active", c.dataset.star === "none"));
+  currentModes.clear();
+  document.querySelectorAll(".mode-chip").forEach(c => {
+    if (!c.classList.contains("water-category-chip")) c.classList.remove("active");
+  });
+  renderHopeList();
   resetFlipCard();
   renderList();
 }
@@ -382,13 +458,20 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
   document.querySelectorAll(".tier-chip").forEach(chip => {
-    chip.addEventListener("click", () => toggleTier(chip.dataset.tier));
+    if (chip.classList.contains("water-tier-chip")) {
+      chip.addEventListener("click", () => toggleWaterTier(chip.dataset.waterTier));
+    } else {
+      chip.addEventListener("click", () => toggleTier(chip.dataset.tier));
+    }
   });
-  document.querySelectorAll(".mode-chip").forEach(chip => {
+  document.querySelectorAll(".mode-chip:not(.water-category-chip)").forEach(chip => {
     chip.addEventListener("click", () => toggleMode(chip.dataset.mode));
   });
   document.querySelectorAll(".star-chip").forEach(chip => {
     chip.addEventListener("click", () => setStar(chip.dataset.star));
+  });
+  document.querySelectorAll(".water-category-chip").forEach(chip => {
+    chip.addEventListener("click", () => toggleWaterCategory(chip.dataset.category));
   });
   document.getElementById("spinBtn").addEventListener("click", spin);
   document.getElementById("confirmBtn").addEventListener("click", confirmChoice);
@@ -396,6 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resetFlipCard();
   renderList();
+  renderHopeList();
   initHistoryStore();
   renderHistory();
 
