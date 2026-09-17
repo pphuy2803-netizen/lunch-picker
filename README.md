@@ -82,9 +82,24 @@ Nếu muốn dùng ảnh tự chụp và lưu ngay trong repo:
   sách, tích chọn 1 hoặc nhiều quán cụ thể bạn đang muốn — các quán được chọn
   sẽ tăng tỉ lệ quay trúng thêm 15% (soft boost, không loại các quán khác).
   Muốn đổi mức tăng, sửa hằng số `WISH_BOOST` trong `app.js`.
+- **Loại trừ 7 quán vừa xuất hiện gần nhất**: quán nào nằm trong 7 lượt chốt
+  gần nhất (của đúng tab đang quay) sẽ **không thể quay trúng lại** cho đến
+  khi có quán mới được chốt đẩy nó ra khỏi danh sách 7 quán gần nhất. Đây là
+  loại trừ cứng, khác với phần "giảm tỉ lệ" bên dưới. Muốn đổi số lượng loại
+  trừ, sửa hằng số `RECENT_EXCLUDE_COUNT` trong `app.js`.
 - **Giảm tỉ lệ quán đã ăn gần đây**: mỗi lần một quán xuất hiện trong lịch sử
   14 ngày, tỉ lệ quay trúng lại sẽ giảm nhẹ (mặc định còn 85% mỗi lần, giảm
   dồn). Muốn đổi mức giảm, sửa hằng số `REPEAT_DECAY` trong `app.js`.
+
+## Chốt "không ăn / không uống"
+
+Ngoài nút "🔒 Chốt món này" (cần quay ra kết quả trước), có thêm nút riêng
+"🚫 Chốt: Không đặt cơm / Không đi ăn" (đổi thành "Không uống hôm nay" ở tab
+quán nước) — bấm được bất cứ lúc nào, không cần quay trước. Dùng khi hôm đó
+bạn không đặt cơm/không đi ăn ngoài/không uống gì cả, để lịch sử phản ánh
+đúng thực tế. Mục này hiện riêng trong lịch sử (có icon 🚫) và không tính vào
+phần loại trừ 7 quán hay giảm tỉ lệ ở trên. Muốn đổi nội dung nhãn, sửa object
+`SKIP_LABELS` trong `app.js`.
 
 ## Ảnh cho quán
 

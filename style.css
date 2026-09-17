@@ -683,3 +683,27 @@ select{
   cursor:pointer;
 }
 .checkbox-item input{ accent-color: var(--accent); width:16px; height:16px; }
+
+/* ---------- Nút chốt không ăn/uống ---------- */
+.skip-row{
+  text-align:center;
+  margin-top: 14px;
+}
+
+.skip-btn{
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family:'Inter', sans-serif;
+  font-weight:600;
+  font-size: 0.82rem;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor:pointer;
+  transition: all .15s ease;
+}
+.skip-btn:hover:not(:disabled){ color: var(--text); border-color: var(--muted); }
+.skip-btn:disabled{ opacity:.7; cursor:not-allowed; }
+
+.history-item-skip .history-name{ color: var(--muted); font-style: italic; }
+.history-item-skip .history-date{ color: var(--muted); }

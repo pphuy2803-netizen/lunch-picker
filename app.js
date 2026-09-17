@@ -3,9 +3,15 @@
 // ---------- Cấu hình có thể chỉnh tay ----------
 const HISTORY_WINDOW_DAYS = 14;   // "đã ăn trong 2 tuần" tính giảm tỉ lệ
 const REPEAT_DECAY = 0.85;        // mỗi lần đã ăn gần đây, tỉ lệ quay ra lại còn 85%
+const RECENT_EXCLUDE_COUNT = 7;   // không cho quay trúng lại N quán vừa chốt gần nhất
 const STAR_BOOST = 1.15;          // ngôi sao hy vọng (quán ăn) tăng tỉ lệ thêm 15%
 const WISH_BOOST = 1.15;          // nguyện vọng (quán nước) tăng tỉ lệ thêm 15%
 const HISTORY_STORAGE_KEY = "truaNayAnGi_history_v1";
+
+const SKIP_LABELS = {
+  quanAn: "Không đặt cơm / Không đi ăn",
+  quanNuoc: "Không uống hôm nay"
+};
 
 // Phân khúc giá riêng cho quán ăn
 const PRICE_TIERS_FOOD = [
@@ -160,6 +166,29 @@ function addHistoryEntry(section, item){
   }
 }
 
+function addSkipEntry(section){
+  const entry = {
+    date: new Date().toISOString(),
+    section,
+    itemId: null,
+    skip: true,
+    ten: SKIP_LABELS[section] || "Không ăn/uống hôm nay",
+    gia: "",
+    anh: "",
+    loai: "",
+    hinhThuc: ""
+  };
+
+  if (useFirebase && firebaseHistoryRef) {
+    firebaseHistoryRef.push(entry);
+  } else {
+    const key = "local_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    historyCache.unshift({ key, ...entry });
+    saveLocalHistory(historyCache);
+    renderHistory();
+  }
+}
+
 function removeHistoryEntry(key){
   if (useFirebase && firebaseHistoryRef) {
     firebaseHistoryRef.child(key).remove();
@@ -185,6 +214,19 @@ function renderHistory(){
     const d = new Date(h.date);
     const dateLabel = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
     const timeLabel = d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+
+    if (h.skip) {
+      return `
+        <div class="history-item history-item-skip">
+          <div class="history-date">${dateLabel}<span>${timeLabel}</span></div>
+          <div class="history-body">
+            <div class="history-name">🚫 ${escapeHtml(h.ten)}</div>
+          </div>
+          <button class="icon-btn" onclick="removeHistoryEntry('${h.key}')" title="Xóa khỏi lịch sử">✕</button>
+        </div>
+      `;
+    }
+
     const icon = h.section === "quanAn" ? "🍚" : "🥤";
     return `
       <div class="history-item">
@@ -221,6 +263,18 @@ function computeWeight(item, section, history){
   return w;
 }
 
+function getRecentExcludedIds(section){
+  const sorted = historyCache
+    .filter(h => h.section === section && h.itemId) // bỏ qua các mục "chốt: không ăn"
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const ids = [];
+  for (const h of sorted) {
+    if (!ids.includes(h.itemId)) ids.push(h.itemId);
+    if (ids.length >= RECENT_EXCLUDE_COUNT) break;
+  }
+  return new Set(ids);
+}
+
 function getFilteredPool(){
   let list = getCurrentList();
   const tiers = tierSelections[currentTab];
@@ -247,6 +301,9 @@ function getFilteredPool(){
       Array.isArray(item.danhMuc) && item.danhMuc.some(dm => currentCategories.has(dm))
     );
   }
+
+  const excludedIds = getRecentExcludedIds(currentTab);
+  list = list.filter(item => !excludedIds.has(item.id));
 
   return list;
 }
@@ -357,6 +414,7 @@ function switchTab(tab){
 
   renderPriceChips();
   renderWishlistPanel();
+  updateSkipButtonLabel();
   resetFlipCard();
   renderList();
 }
@@ -467,6 +525,24 @@ function confirmChoice(){
   }, 1400);
 }
 
+function updateSkipButtonLabel(){
+  const btn = document.getElementById("skipBtn");
+  btn.textContent = "🚫 Chốt: " + SKIP_LABELS[currentTab];
+}
+
+function skipToday(){
+  if (spinning) return;
+  addSkipEntry(currentTab);
+  const btn = document.getElementById("skipBtn");
+  const original = "🚫 Chốt: " + SKIP_LABELS[currentTab];
+  btn.textContent = "✓ Đã ghi nhận!";
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = original;
+  }, 1400);
+}
+
 // ---------- Lightbox ----------
 function openLightbox(src){
   document.getElementById("lightboxImg").src = src;
@@ -493,11 +569,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("spinBtn").addEventListener("click", spin);
   document.getElementById("confirmBtn").addEventListener("click", confirmChoice);
+  document.getElementById("skipBtn").addEventListener("click", skipToday);
   document.getElementById("lightboxOverlay").addEventListener("click", closeLightbox);
   document.getElementById("wishlistToggleBtn").addEventListener("click", toggleWishlistPanel);
 
   renderPriceChips();
   updateWishlistSummary();
+  updateSkipButtonLabel();
   resetFlipCard();
   renderList();
   initHistoryStore();
