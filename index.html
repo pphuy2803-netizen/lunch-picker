@@ -11,6 +11,9 @@
     <header class="site-header">
       <h1>Trưa nay ăn gì?</h1>
       <p>Quay thử thoải mái, ưng rồi mới chốt.</p>
+      <div class="username-row">
+        <input type="text" id="userNameInput" placeholder="Tên bạn (để hiện trong thông báo)" maxlength="30">
+      </div>
     </header>
 
     <div class="veg-banner" id="vegBanner" style="display:none;"></div>
@@ -67,9 +70,17 @@
         <button class="spin-btn" id="spinBtn">🎲 Quay thử</button>
         <button class="confirm-btn" id="confirmBtn" style="display:none;">🔒 Chốt món này</button>
       </div>
+      <div class="allow-repeat-row" id="allowRepeatRow" style="display:none;">
+        <label class="checkbox-item">
+          <input type="checkbox" id="allowRepeatCheckbox">
+          🔁 Vẫn cho phép quay lại quán này lần sau
+        </label>
+      </div>
       <div class="skip-row">
         <button class="skip-btn" id="skipBtn">🚫 Chốt: Không đặt cơm / Không đi ăn</button>
       </div>
+
+      <div class="email-contacts-panel" id="emailContactsPanel" style="display:none;"></div>
     </section>
 
     <h2 class="list-heading" id="listHeading"></h2>
@@ -91,6 +102,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <script src="notify-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="lunar.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>

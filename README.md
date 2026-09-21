@@ -145,6 +145,70 @@ không cần internet gọi API ngoài). Nếu hôm đó là mùng 1, 14 hoặc 
 một banner nhỏ sẽ hiện ở đầu trang nhắc "có thể cân nhắc ăn chay". Ngày
 thường thì không hiện gì cả.
 
+## Thông báo khi có người chốt món
+
+Có 2 cách gửi thông báo, dùng độc lập hoặc cả hai cùng lúc (bật cái nào thì
+web tự gửi cái đó, không cấu hình thì bỏ qua):
+
+### Cách 1: Telegram
+Hướng dẫn chi tiết trong `notify-config.js`. Tóm tắt: tạo bot qua @BotFather,
+thêm bot vào nhóm, lấy `botToken` + `chatId`, dán vào `notify-config.js`.
+
+### Cách 2: Email (EmailJS) — không cần Telegram
+Hướng dẫn chi tiết trong `notify-config.js`. Tóm tắt:
+1. Đăng ký miễn phí tại https://www.emailjs.com
+2. Tạo "Email Service" (kết nối Gmail của bạn) → lấy `serviceId`.
+3. Tạo "Email Template" — điền sẵn (các) email người nhận vào ô "To Email",
+   nội dung email chỉ cần gõ `{{message}}` → lấy `templateId`.
+4. Vào mục Account lấy `publicKey`.
+5. Dán cả 3 giá trị vào `notify-config.js`.
+
+Gói miễn phí EmailJS giới hạn 200 email/tháng — nhóm bạn bè dùng hàng ngày
+thường đủ dùng thoải mái.
+
+### Cách 3 (tùy chọn thêm): chọn gửi email cho từng người cụ thể
+
+Nếu bạn không muốn email tự động gửi cho một danh sách cố định, mà muốn tự
+tay chọn báo cho ai mỗi lần chốt, điền danh sách `EMAIL_CONTACTS` trong
+`notify-config.js`:
+
+```js
+window.EMAIL_CONTACTS = [
+  { name: "An", email: "an@gmail.com" },
+  { name: "Bình", email: "binh@gmail.com" },
+];
+```
+
+Khi đó, mỗi lần bấm "Chốt món này" hoặc "Chốt: Không ăn/uống", một khung nhỏ
+sẽ hiện ra với các nút tên người — bấm vào ai thì email chỉ gửi cho đúng
+người đó (bấm được nhiều tên nếu muốn báo nhiều người, mỗi tên chỉ gửi được
+1 lần cho tới lần quay/chốt kế tiếp).
+
+**Quan trọng**: nếu dùng cách này, vào EmailJS → Email Templates → mở lại
+template đã tạo → tab Settings → sửa ô "To Email" thành `{{to_email}}` (thay
+vì địa chỉ cố định) để web có thể tự điền đúng người bạn chọn vào đó.
+
+Nếu để trống mảng `EMAIL_CONTACTS`, email sẽ tự động gửi theo đúng địa chỉ cố
+định bạn đã điền trong ô "To Email" của template (Cách 2 ở trên) — không cần
+chọn gì cả.
+
+**Ô "Tên bạn"** ở đầu trang (tùy chọn, lưu riêng từng trình duyệt) giúp tin
+nhắn/email ghi rõ ai vừa chốt, ví dụ: "Huy vừa chốt 🍚 quán ăn: Bánh Canh Nhà
+Tròn (25.000đ - 30.000đ)". Không điền thì ghi chung chung "Có người vừa chốt...".
+
+**Lưu ý bảo mật**: các key/token trong `notify-config.js` nằm trong code công
+khai (ai xem mã nguồn trang web cũng thấy được) — chấp nhận được cho việc
+dùng trong 1 nhóm bạn bè, đừng dùng lại các key này cho việc gì quan trọng khác.
+
+## Cho phép quay lại một quán ngay sau khi vừa chốt
+
+Mặc định, quán vừa chốt sẽ nằm trong danh sách "7 quán gần nhất bị loại trừ"
+(xem mục trên) nên sẽ không quay trúng lại ngay. Nếu muốn quán đó vẫn có thể
+xuất hiện lại ngay từ lần quay kế tiếp (ví dụ: quán ngon quá, muốn ăn lại
+liền), tích vào ô "🔁 Vẫn cho phép quay lại quán này lần sau" ngay trước khi
+bấm "Chốt món này". Quán được đánh dấu như vậy sẽ không bị loại trừ và cũng
+không bị giảm tỉ lệ — coi như chưa từng chốt, chỉ để lưu vào lịch sử cho biết.
+
 ## Tùy biến thêm
 
 - Đổi màu sắc, font chữ: sửa các biến ở đầu file `style.css` (phần `:root`).

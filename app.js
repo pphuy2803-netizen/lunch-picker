@@ -7,6 +7,7 @@ const RECENT_EXCLUDE_COUNT = 7;   // không cho quay trúng lại N quán vừa 
 const STAR_BOOST = 1.15;          // ngôi sao hy vọng (quán ăn) tăng tỉ lệ thêm 15%
 const WISH_BOOST = 1.15;          // nguyện vọng (quán nước) tăng tỉ lệ thêm 15%
 const HISTORY_STORAGE_KEY = "truaNayAnGi_history_v1";
+const USERNAME_STORAGE_KEY = "truaNayAnGi_userName";
 
 const SKIP_LABELS = {
   quanAn: "Không đặt cơm / Không đi ăn",
@@ -88,7 +89,110 @@ function getCurrentList(){
   return window.LUNCH_DATA[currentTab] || [];
 }
 
-// ---------- Lịch sử (dùng chung qua Firebase, hoặc lưu cục bộ nếu chưa cấu hình) ----------
+// ---------- Tên người dùng (để hiện trong thông báo) ----------
+function getUserName(){
+  return (localStorage.getItem(USERNAME_STORAGE_KEY) || "").trim();
+}
+
+function saveUserName(name){
+  localStorage.setItem(USERNAME_STORAGE_KEY, name.trim());
+}
+
+// ---------- Thông báo Telegram ----------
+function isTelegramConfigured(){
+  const cfg = window.TELEGRAM_CONFIG;
+  return !!(cfg && cfg.botToken && !String(cfg.botToken).startsWith("DIEN_") && cfg.chatId && !String(cfg.chatId).startsWith("DIEN_"));
+}
+
+function sendTelegramNotify(text){
+  if (!isTelegramConfigured()) return;
+  const cfg = window.TELEGRAM_CONFIG;
+  fetch(`https://api.telegram.org/bot${cfg.botToken}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: cfg.chatId, text })
+  }).catch(err => console.error("Không gửi được thông báo Telegram:", err));
+}
+
+function isEmailConfigured(){
+  const cfg = window.EMAILJS_CONFIG;
+  return !!(cfg && cfg.publicKey && !String(cfg.publicKey).startsWith("DIEN_") &&
+    cfg.serviceId && !String(cfg.serviceId).startsWith("DIEN_") &&
+    cfg.templateId && !String(cfg.templateId).startsWith("DIEN_"));
+}
+
+function initEmailNotify(){
+  if (isEmailConfigured() && window.emailjs) {
+    try {
+      window.emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
+    } catch(e){
+      console.error("Lỗi khởi tạo EmailJS:", e);
+    }
+  }
+}
+
+function sendEmailNotify(message, toEmail){
+  if (!isEmailConfigured() || !window.emailjs) return;
+  const cfg = window.EMAILJS_CONFIG;
+  const params = { message };
+  if (toEmail) params.to_email = toEmail;
+  window.emailjs.send(cfg.serviceId, cfg.templateId, params)
+    .catch(err => console.error("Không gửi được email thông báo:", err));
+}
+
+function hasEmailContacts(){
+  return Array.isArray(window.EMAIL_CONTACTS) && window.EMAIL_CONTACTS.length > 0;
+}
+
+function showEmailContactsPanel(message){
+  const panel = document.getElementById("emailContactsPanel");
+  if (!hasEmailContacts()) {
+    panel.style.display = "none";
+    panel.innerHTML = "";
+    return;
+  }
+  panel.style.display = "block";
+  panel.innerHTML = `
+    <div class="email-contacts-label">📧 Gửi email báo cho ai? (bấm tên, có thể bấm nhiều người)</div>
+    <div class="chip-group">
+      ${window.EMAIL_CONTACTS.map((c, i) => `<button class="contact-chip" data-idx="${i}">${escapeHtml(c.name)}</button>`).join("")}
+    </div>
+  `;
+  panel.querySelectorAll(".contact-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const contact = window.EMAIL_CONTACTS[Number(btn.dataset.idx)];
+      sendEmailNotify(message, contact.email);
+      btn.textContent = "✓ " + contact.name;
+      btn.disabled = true;
+      btn.classList.add("sent");
+    });
+  });
+}
+
+function hideEmailContactsPanel(){
+  const panel = document.getElementById("emailContactsPanel");
+  panel.style.display = "none";
+  panel.innerHTML = "";
+}
+
+function notifyChon(section, item){
+  const name = getUserName();
+  const who = name ? name : "Có người";
+  const label = section === "quanAn" ? "🍚 quán ăn" : "🥤 quán nước";
+  const text = `${who} vừa chốt ${label}: ${item.ten} (${formatPriceRange(item)})`;
+  sendTelegramNotify(text);
+  if (!hasEmailContacts()) sendEmailNotify(text);
+  showEmailContactsPanel(text);
+}
+
+function notifySkip(section){
+  const name = getUserName();
+  const who = name ? name : "Có người";
+  const text = `${who} vừa chốt: 🚫 ${SKIP_LABELS[section]}`;
+  sendTelegramNotify(text);
+  if (!hasEmailContacts()) sendEmailNotify(text);
+  showEmailContactsPanel(text);
+}
 let useFirebase = false;
 let firebaseHistoryRef = null;
 let historyCache = []; // luôn là mảng {key, date, section, itemId, ten, gia, anh, loai, hinhThuc}
@@ -144,7 +248,7 @@ function initHistoryStore(){
     "Lịch sử này đang lưu riêng trên trình duyệt của bạn (chưa cấu hình Firebase để dùng chung).";
 }
 
-function addHistoryEntry(section, item){
+function addHistoryEntry(section, item, allowRepeat){
   const entry = {
     date: new Date().toISOString(),
     section,
@@ -153,7 +257,8 @@ function addHistoryEntry(section, item){
     gia: formatPriceRange(item),
     anh: item.anh || "",
     loai: item.loai || "",
-    hinhThuc: item.hinhThuc || ""
+    hinhThuc: item.hinhThuc || "",
+    allowRepeat: !!allowRepeat
   };
 
   if (useFirebase && firebaseHistoryRef) {
@@ -232,7 +337,7 @@ function renderHistory(){
       <div class="history-item">
         <div class="history-date">${dateLabel}<span>${timeLabel}</span></div>
         <div class="history-body">
-          <div class="history-name">${icon} ${escapeHtml(h.ten)} ${h.loai ? `<span class="tag-mini">${loaiLabel(h.loai)}</span>` : ""} ${h.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(h.hinhThuc)}</span>` : ""}</div>
+          <div class="history-name">${icon} ${escapeHtml(h.ten)} ${h.loai ? `<span class="tag-mini">${loaiLabel(h.loai)}</span>` : ""} ${h.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(h.hinhThuc)}</span>` : ""} ${h.allowRepeat ? `<span class="tag-mini">🔁 Cho phép lặp lại</span>` : ""}</div>
           <div class="history-sub">${escapeHtml(h.gia)}</div>
         </div>
         <button class="icon-btn" onclick="removeHistoryEntry('${h.key}')" title="Xóa khỏi lịch sử">✕</button>
@@ -256,6 +361,7 @@ function computeWeight(item, section, history){
   const recentCount = history.filter(h =>
     h.section === section &&
     h.itemId === item.id &&
+    !h.allowRepeat &&
     withinWindow(h.date, HISTORY_WINDOW_DAYS)
   ).length;
 
@@ -265,7 +371,7 @@ function computeWeight(item, section, history){
 
 function getRecentExcludedIds(section){
   const sorted = historyCache
-    .filter(h => h.section === section && h.itemId) // bỏ qua các mục "chốt: không ăn"
+    .filter(h => h.section === section && h.itemId && !h.allowRepeat) // bỏ qua "chốt: không ăn" và các mục cho phép lặp lại
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   const ids = [];
   for (const h of sorted) {
@@ -463,6 +569,9 @@ function resetFlipCard(){
   card.innerHTML = `<div class="placeholder">Bấm "Quay thử" để xem hôm nay ăn gì 👇</div>`;
   currentResult = null;
   document.getElementById("confirmBtn").style.display = "none";
+  document.getElementById("allowRepeatRow").style.display = "none";
+  document.getElementById("allowRepeatCheckbox").checked = false;
+  hideEmailContactsPanel();
 }
 
 function spin(){
@@ -509,13 +618,16 @@ function spin(){
       currentResult = finalItem;
       confirmBtn.style.display = "inline-block";
       confirmBtn.textContent = "🔒 Chốt món này";
+      document.getElementById("allowRepeatRow").style.display = "flex";
     }
   }, 90);
 }
 
 function confirmChoice(){
   if (!currentResult) return;
-  addHistoryEntry(currentTab, currentResult);
+  const allowRepeat = document.getElementById("allowRepeatCheckbox").checked;
+  addHistoryEntry(currentTab, currentResult, allowRepeat);
+  notifyChon(currentTab, currentResult);
   const confirmBtn = document.getElementById("confirmBtn");
   confirmBtn.textContent = "✓ Đã chốt!";
   confirmBtn.disabled = true;
@@ -533,6 +645,7 @@ function updateSkipButtonLabel(){
 function skipToday(){
   if (spinning) return;
   addSkipEntry(currentTab);
+  notifySkip(currentTab);
   const btn = document.getElementById("skipBtn");
   const original = "🚫 Chốt: " + SKIP_LABELS[currentTab];
   btn.textContent = "✓ Đã ghi nhận!";
@@ -573,9 +686,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("lightboxOverlay").addEventListener("click", closeLightbox);
   document.getElementById("wishlistToggleBtn").addEventListener("click", toggleWishlistPanel);
 
+  const nameInput = document.getElementById("userNameInput");
+  nameInput.value = getUserName();
+  nameInput.addEventListener("input", () => saveUserName(nameInput.value));
+
   renderPriceChips();
   updateWishlistSummary();
   updateSkipButtonLabel();
+  initEmailNotify();
   resetFlipCard();
   renderList();
   initHistoryStore();
