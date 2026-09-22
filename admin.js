@@ -6,8 +6,10 @@
 const MAX_IMAGE_WIDTH = 480; // ảnh upload sẽ được thu nhỏ về chiều rộng này
 
 let workingData = JSON.parse(JSON.stringify(window.LUNCH_DATA)); // deep copy
+let workingContacts = JSON.parse(JSON.stringify(window.EMAIL_CONTACTS || [])); // deep copy
 let editingSection = null; // "quanAn" | "quanNuoc" | null
 let editingId = null;
+let editingContactIndex = null;
 
 function escapeHtml(str){
   const div = document.createElement("div");
@@ -274,8 +276,202 @@ window.LUNCH_DATA = ${JSON.stringify(workingData, null, 2)};
   showToast("Đã tải data.js — nhớ thay vào repo & push!");
 }
 
+// ---------- Quản lý danh sách email nhận thông báo ----------
+function renderContactList(){
+  const listEl = document.getElementById("contactList");
+  if (workingContacts.length === 0) {
+    listEl.innerHTML = `<div class="empty-list">Chưa có ai trong danh sách.</div>`;
+    return;
+  }
+  listEl.innerHTML = workingContacts.map((c, idx) => `
+    <div class="admin-item">
+      <div class="meta">
+        <div class="name">${escapeHtml(c.name)}</div>
+        <div class="sub">${escapeHtml(c.email)}</div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" onclick="startEditContact(${idx})">Sửa</button>
+        <button class="icon-btn" onclick="deleteContact(${idx})">Xóa</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function resetContactForm(){
+  document.getElementById("contact_name").value = "";
+  document.getElementById("contact_email").value = "";
+  document.getElementById("contact_submitBtn").textContent = "Thêm người";
+  document.getElementById("contact_cancelBtn").style.display = "none";
+  editingContactIndex = null;
+}
+
+function startEditContact(idx){
+  const c = workingContacts[idx];
+  if (!c) return;
+  document.getElementById("contact_name").value = c.name;
+  document.getElementById("contact_email").value = c.email;
+  document.getElementById("contact_submitBtn").textContent = "Lưu thay đổi";
+  document.getElementById("contact_cancelBtn").style.display = "inline-block";
+  editingContactIndex = idx;
+}
+
+function deleteContact(idx){
+  const c = workingContacts[idx];
+  if (!c) return;
+  if (!confirm(`Xóa "${c.name}" khỏi danh sách nhận thông báo?`)) return;
+  workingContacts.splice(idx, 1);
+  renderContactList();
+  showToast("Đã xóa. Nhớ tải file cấu hình thông báo & push lên GitHub.");
+}
+
+function submitContactForm(){
+  const name = document.getElementById("contact_name").value.trim();
+  const email = document.getElementById("contact_email").value.trim();
+
+  if (!name || !email) {
+    showToast("Cần nhập đủ tên và email.");
+    return;
+  }
+  if (!email.includes("@") || !email.includes(".")) {
+    showToast("Email có vẻ không hợp lệ, kiểm tra lại nhé.");
+    return;
+  }
+
+  if (editingContactIndex !== null) {
+    workingContacts[editingContactIndex] = { name, email };
+    showToast("Đã lưu thay đổi.");
+  } else {
+    workingContacts.push({ name, email });
+    showToast("Đã thêm người mới vào danh sách.");
+  }
+
+  resetContactForm();
+  renderContactList();
+}
+
+function exportNotifyConfig(){
+  const telegramCfg = window.TELEGRAM_CONFIG || { botToken: "DIEN_BOT_TOKEN_VAO_DAY", chatId: "DIEN_CHAT_ID_VAO_DAY" };
+  const emailjsCfg = window.EMAILJS_CONFIG || { publicKey: "DIEN_PUBLIC_KEY_VAO_DAY", serviceId: "DIEN_SERVICE_ID_VAO_DAY", templateId: "DIEN_TEMPLATE_ID_VAO_DAY" };
+
+  const contactsCode = workingContacts.length > 0
+    ? workingContacts.map(c => `  { name: ${JSON.stringify(c.name)}, email: ${JSON.stringify(c.email)} },`).join("\n")
+    : `  // { name: "An", email: "an@gmail.com" },`;
+
+  const content = `// notify-config.js
+//
+// File này dùng để gửi TIN NHẮN THÔNG BÁO vào một nhóm Telegram mỗi khi có
+// ai đó bấm "Chốt món này" hoặc "Chốt: Không ăn/uống". Điện thoại mọi người
+// trong nhóm sẽ nhận được như tin nhắn Telegram bình thường.
+//
+// ================= CÁCH LẤY THÔNG TIN BÊN DƯỚI (khoảng 5 phút) =================
+// 1. Mở Telegram, tìm kiếm tài khoản "BotFather" (có tick xanh chính chủ).
+// 2. Nhắn "/newbot" cho BotFather, làm theo hướng dẫn: đặt tên bot (vd:
+//    "Trua Nay An Gi Bot") và username cho bot (phải kết thúc bằng "bot",
+//    vd: "trua_nay_an_gi_bot").
+// 3. BotFather sẽ trả về một đoạn "token" dạng:
+//    123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+//    Copy đoạn này, dán vào "botToken" bên dưới.
+// 4. Tạo một nhóm (group) Telegram với bạn bè (hoặc dùng nhóm có sẵn).
+// 5. Thêm bot vừa tạo vào nhóm đó (tìm theo username bot đã đặt ở bước 2).
+// 6. Lấy "chat ID" của nhóm — cách đơn giản nhất:
+//    a. Trong nhóm, gửi thử một tin nhắn bất kỳ (vd: "test").
+//    b. Mở trình duyệt, truy cập link sau (thay YOUR_BOT_TOKEN bằng token ở
+//       bước 3):
+//       https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates
+//    c. Tìm trong kết quả trả về (dạng JSON) mục "chat":{"id": -123456789...}
+//       — số đó (thường là số âm vì là nhóm) chính là chat ID. Copy số đó
+//       (giữ nguyên dấu trừ nếu có) dán vào "chatId" bên dưới (dạng chuỗi
+//       trong dấu ngoặc kép).
+//
+// Nếu chưa muốn làm bước này, cứ để nguyên file mặc định — web vẫn hoạt động
+// bình thường, chỉ là sẽ không gửi thông báo Telegram khi có người chốt món.
+//
+// ⚠️ LƯU Ý BẢO MẬT: token bot sẽ nằm trong code công khai (ai xem mã nguồn
+// trang web cũng thấy được). Với 1 bot chỉ dùng để gửi tin vào 1 nhóm bạn bè
+// thì rủi ro thấp (nhiều nhất là ai đó có thể lợi dụng bot gửi tin vào nhóm
+// hộ), nhưng đừng dùng chung token này cho việc gì quan trọng khác.
+
+window.TELEGRAM_CONFIG = ${JSON.stringify(telegramCfg, null, 2)};
+
+// ================================================================
+// CÁCH 2: GỬI EMAIL THÔNG BÁO QUA EmailJS (không cần Telegram)
+// ================================================================
+// EmailJS là dịch vụ miễn phí (200 email/tháng) cho phép gửi email thẳng từ
+// trình duyệt, không cần server riêng. Làm theo các bước sau (~7-10 phút):
+//
+// 1. Vào https://www.emailjs.com , bấm "Sign Up" tạo tài khoản miễn phí
+//    (có thể đăng ký bằng Google cho nhanh).
+//
+// 2. Sau khi đăng nhập, vào mục "Email Services" (menu bên trái) → bấm
+//    "Add New Service" → chọn nhà cung cấp email bạn đang dùng để gửi đi
+//    (vd: Gmail) → làm theo hướng dẫn kết nối tài khoản Gmail của bạn.
+//    Sau khi tạo xong, bạn sẽ thấy một "Service ID" (dạng service_xxxxxxx)
+//    — copy lại, dán vào "serviceId" bên dưới.
+//
+// 3. Vào mục "Email Templates" → bấm "Create New Template". Trong khung
+//    soạn email hiện ra:
+//    - Ô "To Email": nếu dùng danh sách "chọn từng người" (Cách 3 bên
+//      dưới), điền {{to_email}}; nếu không, điền sẵn (các) email cố định
+//      muốn nhận, cách nhau bằng dấu phẩy.
+//    - Ô "Subject": gõ tùy ý, vd: Có người vừa chốt món trưa nay!
+//    - Nội dung email (Content): xóa mẫu có sẵn, gõ:
+//      {{message}}
+//      (đúng như vậy, kể cả 2 dấu ngoặc nhọn — đây là chỗ nội dung thông
+//      báo thật sẽ được điền vào).
+//    - Bấm "Save". Bạn sẽ thấy "Template ID" (dạng template_xxxxxxx) ở đầu
+//      trang — copy lại, dán vào "templateId" bên dưới.
+//
+// 4. Vào mục "Account" (góc trên bên phải, hoặc menu General) → tìm mục
+//    "API Keys" hoặc "Public Key" → copy đoạn "Public Key" → dán vào
+//    "publicKey" bên dưới.
+//
+// Nếu chưa muốn làm bước này, cứ để nguyên mặc định — web vẫn chạy bình
+// thường, chỉ là chưa gửi email thông báo.
+//
+// LƯU Ý: gói miễn phí giới hạn 200 email/tháng — với nhóm bạn bè dùng hàng
+// ngày thì thường đủ dùng thoải mái.
+
+window.EMAILJS_CONFIG = ${JSON.stringify(emailjsCfg, null, 2)};
+
+// ================================================================
+// CÁCH 3 (tùy chọn thêm): CHỌN GỬI EMAIL CHO TỪNG NGƯỜI CỤ THỂ
+// ================================================================
+// Nếu bạn điền danh sách "EMAIL_CONTACTS" bên dưới, mỗi khi bấm "Chốt món
+// này" (hoặc "Chốt: Không ăn/uống"), web sẽ hiện ra các nút tên người —
+// bấm vào tên ai thì email chỉ gửi cho đúng người đó, muốn báo nhiều người
+// thì bấm nhiều tên. Nếu để trống mảng này, email sẽ tự gửi theo đúng địa
+// chỉ cố định bạn đã điền sẵn trong ô "To Email" của template (Cách 2).
+//
+// QUAN TRỌNG: nếu dùng cách này, vào EmailJS → Email Templates → mở lại
+// template đã tạo → tab "Settings" → sửa ô "To Email" thành:
+//   {{to_email}}
+// (đúng như vậy, thay vì điền sẵn địa chỉ cố định) — để web có thể tự thay
+// đúng người bạn vừa bấm chọn vào đó.
+//
+// Danh sách này quản lý dễ dàng qua trang quanly.html (mục "Danh sách nhận
+// email thông báo") — không cần sửa tay ở đây, chỉ cần tải file mới sau khi
+// thêm/sửa/xóa người trong trang quản lý rồi push lên GitHub.
+
+window.EMAIL_CONTACTS = [
+${contactsCode}
+];
+`;
+
+  const blob = new Blob([content], { type: "text/javascript" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "notify-config.js";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast("Đã tải notify-config.js — nhớ thay vào repo & push!");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderAll();
+  renderContactList();
   ["quanAn", "quanNuoc"].forEach(section => {
     setupFileUpload(section);
     setupUrlPreview(section);
@@ -284,5 +480,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("quanNuoc_submitBtn").addEventListener("click", () => submitForm("quanNuoc"));
   document.getElementById("quanAn_cancelBtn").addEventListener("click", () => resetForm("quanAn"));
   document.getElementById("quanNuoc_cancelBtn").addEventListener("click", () => resetForm("quanNuoc"));
+  document.getElementById("contact_submitBtn").addEventListener("click", submitContactForm);
+  document.getElementById("contact_cancelBtn").addEventListener("click", resetContactForm);
   document.getElementById("exportBtn").addEventListener("click", exportData);
+  document.getElementById("exportNotifyBtn").addEventListener("click", exportNotifyConfig);
 });

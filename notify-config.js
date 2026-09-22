@@ -96,11 +96,11 @@ window.EMAILJS_CONFIG = {
 // đúng người bạn vừa bấm chọn vào đó.
 
 window.EMAIL_CONTACTS = [
-   { name: "Vinh", email: "thanhvinh09022001@gmail.com" },
-   { name: "Huy", email: "pphuy2803@gmail.com" },
-   { name: "Duy", email: "d.duypp@dcorp.com.vn" },
-   { name: "Nghia", email: "d.nghiadt@dcorp.com.vn" },
-   { name: "Phong", email: "d.phongnd@dcorp.com.vn" },
-   { name: "Trong", email: "d.tronglt@dcorp.com.vn" },
-   { name: "Tri", email: "d.tridm@dcorp.com.vn" },
+  { name: "Vinh", email: "thanhvinh09022001@gmail.com" },
+  { name: "Huy", email: "pphuy2803@gmail.com" },
+  { name: "Duy", email: "d.duypp@dcorp.com.vn" },
+  { name: "Nghia", email: "d.nghidt@dcorp.com.vn" },
+  { name: "Phong", email: "d.phongnd@dcorp.com.vn" },
+  { name: "Trong", email: "d.tronglt@dcorp.com.vn" },
+  { name: "Tri", email: "d.tridm@dcorp.com.vn" },
 ];

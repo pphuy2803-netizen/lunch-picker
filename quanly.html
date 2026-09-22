@@ -109,10 +109,33 @@
       <div style="margin-top:20px;" id="quanNuocList"></div>
     </section>
 
+    <!-- DANH SÁCH NHẬN EMAIL THÔNG BÁO -->
+    <section class="admin-section">
+      <h2>📧 Danh sách nhận email thông báo</h2>
+      <p class="section-hint">Đây là danh sách hiện ra để bạn bấm chọn mỗi khi "Chốt món" — thêm người mới vào nhóm ăn thì thêm ở đây.</p>
+      <div class="field-row">
+        <div class="field">
+          <label>Tên hiển thị</label>
+          <input type="text" id="contact_name" placeholder="VD: Vinh">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="text" id="contact_email" placeholder="VD: vinh@gmail.com">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="contact_submitBtn">Thêm người</button>
+        <button class="btn btn-ghost" id="contact_cancelBtn" style="display:none;">Hủy sửa</button>
+      </div>
+
+      <div style="margin-top:20px;" id="contactList"></div>
+    </section>
+
     <!-- EXPORT -->
     <section class="admin-section export-box">
       <button class="btn btn-primary" id="exportBtn">⬇ Tải file dữ liệu (data.js)</button>
-      <p>Sau khi tải, thay file <strong>data.js</strong> trong repo GitHub của bạn rồi commit + push để cập nhật cho mọi người xem trang.</p>
+      <button class="btn btn-primary" id="exportNotifyBtn">⬇ Tải file cấu hình thông báo (notify-config.js)</button>
+      <p>Sau khi tải, thay file tương ứng trong repo GitHub của bạn rồi commit + push để cập nhật cho mọi người.</p>
     </section>
 
     <a class="admin-link" href="index.html">← Quay lại trang chính</a>
@@ -125,6 +148,7 @@
   </div>
 
   <script src="data.js"></script>
+  <script src="notify-config.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>
