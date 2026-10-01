@@ -729,17 +729,6 @@ select{
 }
 .username-row input::placeholder{ color: var(--muted); }
 
-/* ---------- Cho phép lặp lại quán ---------- */
-.allow-repeat-row{
-  display:flex;
-  justify-content:center;
-  margin-top: 10px;
-}
-.allow-repeat-row .checkbox-item{
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
 /* ---------- Panel chọn người nhận email ---------- */
 .email-contacts-panel{
   margin-top: 16px;

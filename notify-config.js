@@ -33,8 +33,8 @@
 // hộ), nhưng đừng dùng chung token này cho việc gì quan trọng khác.
 
 window.TELEGRAM_CONFIG = {
-  "botToken": "DIEN_BOT_TOKEN_VAO_DAY",
-  "chatId": "DIEN_CHAT_ID_VAO_DAY"
+  botToken: "DIEN_BOT_TOKEN_VAO_DAY",
+  chatId: "DIEN_CHAT_ID_VAO_DAY"
 };
 
 // ================================================================
@@ -54,9 +54,8 @@ window.TELEGRAM_CONFIG = {
 //
 // 3. Vào mục "Email Templates" → bấm "Create New Template". Trong khung
 //    soạn email hiện ra:
-//    - Ô "To Email": nếu dùng danh sách "chọn từng người" (Cách 3 bên
-//      dưới), điền {{to_email}}; nếu không, điền sẵn (các) email cố định
-//      muốn nhận, cách nhau bằng dấu phẩy.
+//    - Ô "To Email": điền (các) email bạn muốn NHẬN thông báo, cách nhau
+//      bằng dấu phẩy nếu nhiều người, vd: an@gmail.com, binh@gmail.com
 //    - Ô "Subject": gõ tùy ý, vd: Có người vừa chốt món trưa nay!
 //    - Nội dung email (Content): xóa mẫu có sẵn, gõ:
 //      {{message}}
@@ -76,9 +75,9 @@ window.TELEGRAM_CONFIG = {
 // ngày thì thường đủ dùng thoải mái.
 
 window.EMAILJS_CONFIG = {
-  "publicKey": "JwlmgylT8oUoMp3zt",
-  "serviceId": "service_rrfbzjk",
-  "templateId": "template_04hojyq"
+  publicKey: "JwlmgylT8oUoMp3zt",
+  serviceId: "service_rrfbzjk",
+  templateId: "template_04hojyq"
 };
 
 // ================================================================
@@ -95,10 +94,6 @@ window.EMAILJS_CONFIG = {
 //   {{to_email}}
 // (đúng như vậy, thay vì điền sẵn địa chỉ cố định) — để web có thể tự thay
 // đúng người bạn vừa bấm chọn vào đó.
-//
-// Danh sách này quản lý dễ dàng qua trang quanly.html (mục "Danh sách nhận
-// email thông báo") — không cần sửa tay ở đây, chỉ cần tải file mới sau khi
-// thêm/sửa/xóa người trong trang quản lý rồi push lên GitHub.
 
 window.EMAIL_CONTACTS = [
   { name: "Vinh", email: "thanhvinh09022001@gmail.com" },

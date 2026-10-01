@@ -1,9 +1,10 @@
 // app.js — logic cho trang chính (index.html)
 
 // ---------- Cấu hình có thể chỉnh tay ----------
-const HISTORY_WINDOW_DAYS = 14;   // "đã ăn trong 2 tuần" tính giảm tỉ lệ
-const REPEAT_DECAY = 0.85;        // mỗi lần đã ăn gần đây, tỉ lệ quay ra lại còn 85%
-const RECENT_EXCLUDE_COUNT = 7;   // không cho quay trúng lại N quán vừa chốt gần nhất
+const HISTORY_WINDOW_DAYS = 14;   // "đã ăn trong 2 tuần" — chỉ dùng để hiển thị lịch sử
+const DINE_IN_PENALTY_DAYS = 3;        // quán "đi ăn": trong 3 ngày kể từ lần chốt gần nhất, bị giảm tỉ lệ
+const DINE_IN_PENALTY_MULTIPLIER = 0.7; // mỗi lần quay trúng lại trong 3 ngày đó, giảm thêm 30% (cộng dồn)
+const APP_LOCK_DAYS = 14;              // quán "đặt app": quay trúng thì khóa hẳn trong 14 ngày
 const STAR_BOOST = 1.15;          // ngôi sao hy vọng (quán ăn) tăng tỉ lệ thêm 15%
 const WISH_BOOST = 1.15;          // nguyện vọng (quán nước) tăng tỉ lệ thêm 15%
 const HISTORY_STORAGE_KEY = "truaNayAnGi_history_v1";
@@ -248,7 +249,7 @@ function initHistoryStore(){
     "Lịch sử này đang lưu riêng trên trình duyệt của bạn (chưa cấu hình Firebase để dùng chung).";
 }
 
-function addHistoryEntry(section, item, allowRepeat){
+function addHistoryEntry(section, item){
   const entry = {
     date: new Date().toISOString(),
     section,
@@ -257,8 +258,7 @@ function addHistoryEntry(section, item, allowRepeat){
     gia: formatPriceRange(item),
     anh: item.anh || "",
     loai: item.loai || "",
-    hinhThuc: item.hinhThuc || "",
-    allowRepeat: !!allowRepeat
+    hinhThuc: item.hinhThuc || ""
   };
 
   if (useFirebase && firebaseHistoryRef) {
@@ -337,7 +337,7 @@ function renderHistory(){
       <div class="history-item">
         <div class="history-date">${dateLabel}<span>${timeLabel}</span></div>
         <div class="history-body">
-          <div class="history-name">${icon} ${escapeHtml(h.ten)} ${h.loai ? `<span class="tag-mini">${loaiLabel(h.loai)}</span>` : ""} ${h.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(h.hinhThuc)}</span>` : ""} ${h.allowRepeat ? `<span class="tag-mini">🔁 Cho phép lặp lại</span>` : ""}</div>
+          <div class="history-name">${icon} ${escapeHtml(h.ten)} ${h.loai ? `<span class="tag-mini">${loaiLabel(h.loai)}</span>` : ""} ${h.hinhThuc ? `<span class="tag-mini">${hinhThucLabel(h.hinhThuc)}</span>` : ""}</div>
           <div class="history-sub">${escapeHtml(h.gia)}</div>
         </div>
         <button class="icon-btn" onclick="removeHistoryEntry('${h.key}')" title="Xóa khỏi lịch sử">✕</button>
@@ -358,27 +358,34 @@ function computeWeight(item, section, history){
     w *= WISH_BOOST;
   }
 
-  const recentCount = history.filter(h =>
-    h.section === section &&
-    h.itemId === item.id &&
-    !h.allowRepeat &&
-    withinWindow(h.date, HISTORY_WINDOW_DAYS)
-  ).length;
+  // Quán "đặt app" được xử lý bằng khóa cứng 14 ngày ở getFilteredPool, không
+  // cần giảm tỉ lệ ở đây nữa. Các quán còn lại (đi ăn, hoặc quán nước không
+  // có hình thức) dùng quy tắc giảm 30% mỗi lần quay trúng trong 3 ngày gần
+  // nhất, cộng dồn nếu quay trúng nhiều lần.
+  if (item.hinhThuc !== "datApp") {
+    const recentCount = history.filter(h =>
+      h.section === section &&
+      h.itemId === item.id &&
+      withinWindow(h.date, DINE_IN_PENALTY_DAYS)
+    ).length;
+    w *= Math.pow(DINE_IN_PENALTY_MULTIPLIER, recentCount);
+  }
 
-  w *= Math.pow(REPEAT_DECAY, recentCount);
   return w;
 }
 
-function getRecentExcludedIds(section){
-  const sorted = historyCache
-    .filter(h => h.section === section && h.itemId && !h.allowRepeat) // bỏ qua "chốt: không ăn" và các mục cho phép lặp lại
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-  const ids = [];
-  for (const h of sorted) {
-    if (!ids.includes(h.itemId)) ids.push(h.itemId);
-    if (ids.length >= RECENT_EXCLUDE_COUNT) break;
-  }
-  return new Set(ids);
+function getAppLockedIds(section){
+  const fullList = window.LUNCH_DATA[section] || [];
+  const lockedIds = new Set();
+  historyCache.forEach(h => {
+    if (h.section === section && h.itemId && withinWindow(h.date, APP_LOCK_DAYS)) {
+      const item = fullList.find(x => x.id === h.itemId);
+      if (item && item.hinhThuc === "datApp") {
+        lockedIds.add(h.itemId);
+      }
+    }
+  });
+  return lockedIds;
 }
 
 function getFilteredPool(){
@@ -408,8 +415,8 @@ function getFilteredPool(){
     );
   }
 
-  const excludedIds = getRecentExcludedIds(currentTab);
-  list = list.filter(item => !excludedIds.has(item.id));
+  const lockedIds = getAppLockedIds(currentTab);
+  list = list.filter(item => !lockedIds.has(item.id));
 
   return list;
 }
@@ -569,8 +576,6 @@ function resetFlipCard(){
   card.innerHTML = `<div class="placeholder">Bấm "Quay thử" để xem hôm nay ăn gì 👇</div>`;
   currentResult = null;
   document.getElementById("confirmBtn").style.display = "none";
-  document.getElementById("allowRepeatRow").style.display = "none";
-  document.getElementById("allowRepeatCheckbox").checked = false;
   hideEmailContactsPanel();
 }
 
@@ -618,15 +623,13 @@ function spin(){
       currentResult = finalItem;
       confirmBtn.style.display = "inline-block";
       confirmBtn.textContent = "🔒 Chốt món này";
-      document.getElementById("allowRepeatRow").style.display = "flex";
     }
   }, 90);
 }
 
 function confirmChoice(){
   if (!currentResult) return;
-  const allowRepeat = document.getElementById("allowRepeatCheckbox").checked;
-  addHistoryEntry(currentTab, currentResult, allowRepeat);
+  addHistoryEntry(currentTab, currentResult);
   notifyChon(currentTab, currentResult);
   const confirmBtn = document.getElementById("confirmBtn");
   confirmBtn.textContent = "✓ Đã chốt!";

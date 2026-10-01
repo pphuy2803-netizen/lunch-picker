@@ -82,14 +82,19 @@ Nếu muốn dùng ảnh tự chụp và lưu ngay trong repo:
   sách, tích chọn 1 hoặc nhiều quán cụ thể bạn đang muốn — các quán được chọn
   sẽ tăng tỉ lệ quay trúng thêm 15% (soft boost, không loại các quán khác).
   Muốn đổi mức tăng, sửa hằng số `WISH_BOOST` trong `app.js`.
-- **Loại trừ 7 quán vừa xuất hiện gần nhất**: quán nào nằm trong 7 lượt chốt
-  gần nhất (của đúng tab đang quay) sẽ **không thể quay trúng lại** cho đến
-  khi có quán mới được chốt đẩy nó ra khỏi danh sách 7 quán gần nhất. Đây là
-  loại trừ cứng, khác với phần "giảm tỉ lệ" bên dưới. Muốn đổi số lượng loại
-  trừ, sửa hằng số `RECENT_EXCLUDE_COUNT` trong `app.js`.
-- **Giảm tỉ lệ quán đã ăn gần đây**: mỗi lần một quán xuất hiện trong lịch sử
-  14 ngày, tỉ lệ quay trúng lại sẽ giảm nhẹ (mặc định còn 85% mỗi lần, giảm
-  dồn). Muốn đổi mức giảm, sửa hằng số `REPEAT_DECAY` trong `app.js`.
+- **Quán "đi ăn" — giảm tỉ lệ 30% cộng dồn trong 3 ngày**: mỗi lần quán có
+  hình thức "🍽️ Đi ăn" quay trúng, trong vòng 3 ngày kể từ lần đó tỉ lệ của
+  quán sẽ giảm 30% (còn 70%). Nếu trong 3 ngày đó quay trúng lại thêm lần
+  nữa, giảm cộng dồn thêm 30% nữa (còn 49%, rồi 34.3%...). Quán không bị loại
+  khỏi danh sách quay, chỉ là tỉ lệ thấp dần. Nếu quá 3 ngày mà không quay
+  trúng lại, tỉ lệ tự động khôi phục về bình thường. Muốn đổi số ngày hoặc
+  mức giảm, sửa 2 hằng số `DINE_IN_PENALTY_DAYS` và
+  `DINE_IN_PENALTY_MULTIPLIER` trong `app.js`.
+- **Quán "đặt app" — khóa hẳn 14 ngày**: quán có hình thức "🛵 Đặt app" sau
+  khi quay trúng sẽ **không thể quay trúng lại** trong 14 ngày tiếp theo (loại
+  hẳn khỏi danh sách quay, không chỉ giảm tỉ lệ). Sau 14 ngày tự động mở khóa.
+  Muốn đổi số ngày khóa, sửa hằng số `APP_LOCK_DAYS` trong `app.js`.
+  Quán nước (không có hình thức) áp dụng theo quy tắc "đi ăn" ở trên.
 
 ## Chốt "không ăn / không uống"
 
@@ -200,17 +205,8 @@ Tròn (25.000đ - 30.000đ)". Không điền thì ghi chung chung "Có người 
 khai (ai xem mã nguồn trang web cũng thấy được) — chấp nhận được cho việc
 dùng trong 1 nhóm bạn bè, đừng dùng lại các key này cho việc gì quan trọng khác.
 
-## Cho phép quay lại một quán ngay sau khi vừa chốt
-
-Mặc định, quán vừa chốt sẽ nằm trong danh sách "7 quán gần nhất bị loại trừ"
-(xem mục trên) nên sẽ không quay trúng lại ngay. Nếu muốn quán đó vẫn có thể
-xuất hiện lại ngay từ lần quay kế tiếp (ví dụ: quán ngon quá, muốn ăn lại
-liền), tích vào ô "🔁 Vẫn cho phép quay lại quán này lần sau" ngay trước khi
-bấm "Chốt món này". Quán được đánh dấu như vậy sẽ không bị loại trừ và cũng
-không bị giảm tỉ lệ — coi như chưa từng chốt, chỉ để lưu vào lịch sử cho biết.
-
 ## Tùy biến thêm
 
 - Đổi màu sắc, font chữ: sửa các biến ở đầu file `style.css` (phần `:root`).
 - Đổi tốc độ / kiểu quay: sửa hàm `spin()` trong `app.js`.
-- Đổi số ngày tính lịch sử (mặc định 14 ngày): sửa `HISTORY_WINDOW_DAYS` trong `app.js`.
+- Đổi số ngày tính lịch sử hiển thị (mặc định 14 ngày): sửa `HISTORY_WINDOW_DAYS` trong `app.js`.
